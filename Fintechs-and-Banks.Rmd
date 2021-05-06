@@ -1,0 +1,202 @@
+
+---
+title: "Role of Fintechs in the Financial Services Industry"
+author: "Santanu Mukherjee"
+date: "5/5/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Fintech Basics
+
+What is Fintech? Well, Fintech is an abbreviation for [Financial Technology](https://en.wikipedia.org/wiki/Financial_technology). Fintech is a new and emerging financial industry that applies technology to improve [financial services](https://en.wikipedia.org/wiki/Financial_services).
+The Fintech companies uses technology and innovation to not only compete with traditional financial methods, but aim to improve the areas in the delivery of financial services to the customers. With the use of [smartphones](https://en.wikipedia.org/wiki/Smartphone) for mobile banking, investing, borrowing services and the most recent cryptocurrency are some examples of technology that the Fintech companies are using to make financial services more accessible to the common man.
+
+Fintech companies use a variety of technologies including [artificial intelligence](https://en.wikipedia.org/wiki/Artificial_intelligence)(AI), [big data](https://en.wikipedia.org/wiki/Big_data), [robotic process automation](https://en.wikipedia.org/wiki/Robotic_process_automation)(RPA) and [blockchain](https://en.wikipedia.org/wiki/Blockchain).
+
+Initially Fintech was a disruption and a revolution in the world of Finance. However with the passage of time, as the Fintechs are gaining market share and competing with the traditional big banks (examples [Bank of America](https://www.bankofamerica.com/), [Chase](https://www.chase.com/) and others) and transforming the Financial Industry, these big banks have also started innovating and using technology in engaging with their customers.
+
+The statistics below shows how the **mobile payments revenue and user base** have consistently grown over the last **5** years.
+
+
+```{r fintechmobile, echo=FALSE, warning=FALSE}
+#Load the Library
+library(shiny)
+library(ggplot2)
+load(url("https://github.com/santum4/dataexam/blob/main/df2.Rdata?raw=true"))
+
+
+# Define UI for application
+ui <- fluidPage(
+
+    # Application title
+    titlePanel("Mobile Payment Revenue and Users"),
+
+    # Sidebar layout
+    sidebarLayout(
+        #Inputs: Select which inputs from the data we want to display
+        sidebarPanel(
+            #Select variable for y-axis
+                  #selectInput(inputId = "y", 
+                  selectInput(inputId = "y", 
+                  label = "Y-axis: (in billions)",
+                  choices = c("revenue","users"), 
+                  selected = "revenue"),
+            #Select X-axis variables
+                  selectInput(inputId = "x", 
+                  label = "X-axis:",
+                  choices = c("year"), 
+                  selected = "year"),
+            #Select colors
+                  selectInput(inputId = "choosecolors", 
+                  label = "Choose your color",
+                  choices = c("darkred","dodgerblue4", "green"), 
+                  selected = "darkred")
+            
+            
+        ),
+
+        #Output: Type of plot
+        mainPanel(
+           plotOutput(outputId = "FreqTab") #Any name can go where "FreqTab" is, but be sure to keep it consistent with name in output$FreqTab in the server section
+        )
+    )
+)
+
+# Define server logic required for the plot
+server <- function(input, output) {
+
+    output$FreqTab <- renderPlot({
+        # draw the line chart
+      ggplot(df2, aes_string(x=input$x, y=input$y)) + geom_line(color = input$choosecolors, size = 2) 
+      
+      
+    })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
+```
+Source : [Fintech Revenue data](https://www.businessofapps.com/data/fintech-app-market/#1.2) , [Fintech Users data](https://www.businessofapps.com/data/fintech-app-market/#1.3)
+
+### Rise of Neobanks
+
+In the last decade, we saw the increasingly daily use of mobile phones in our life. The [Neobanks](https://en.wikipedia.org/wiki/Neobank) used this mobile technology to their advantage and started providing more user friendly mobile experiences to the customers. 
+
+To get more customers and especially the millennials and Gen Z, neobanks have removed a lot of the fees and charges usually associated with traditional banking. They can do this because they do not have the overhead that brick and motor traditional banks like [Bank of America](https://www.bankofamerica.com/) and [Chase](https://www.chase.com/) have.
+
+Most neobanks are attempting to branch out from current accounts, into more lucrative forms of banking like savings, investments, loans and mortgages. With the passage of time, we expect to see more of this behavior, as neobanks morph into financial super-apps with dozens of functions.
+
+
+The statistics below shows how the **Neo Bank App** footprint have consistently grown over the last years. It also shows their significant **revenue and users base** and based on that their **valuations** are also sky high.
+
+```{r fintechneobankapp, message=FALSE, warning=FALSE, echo=FALSE}
+library(plotly)
+load(url("https://github.com/santum4/dataexam/blob/main/df4.Rdata?raw=true"))
+
+   df5 <- ggplot(df4) +
+     geom_point(aes(x=df4$NeoBankApp,y = df4$revenue), color = "darkred", size = 2) +
+     geom_point(aes(x=df4$NeoBankApp,y = df4$users), color = "yellow", size = 2) +
+     geom_point(aes(x=df4$NeoBankApp,y = df4$valuation), color = "dodgerblue4", size = 2) +
+     xlab("NeoBankApp") + ylab("Revenue/Valuation/Users (in billions)") +
+     ggtitle("NeoBank App Revenue, Users and Valuation") +
+     theme(plot.title = element_text(face="bold", size=18))
+     ggplotly(df5)
+
+
+```
+
+
+Source : [NeoBank Revenue and Valuation data](https://www.businessofapps.com/data/fintech-app-market/#2.2) , [NeoBank Users data](https://www.businessofapps.com/data/fintech-app-market/#2.3) 
+
+### Traditional Banks and their problems
+
+The effects of the [**2008 recession**](https://en.wikipedia.org/wiki/Great_Recession) on the banking sector were:  
+•	**The financial crisis undermined the trust in banks.**  
+•	**Regulations brought by the federal agencies were extensive and expensive.**  
+•	**Fintech startups became alternative providers outpacing and outcompeting the traditional banks.**  
+
+
+
+```{r fintechbankdata, message=FALSE, warning=FALSE, echo=FALSE}
+library(plotly)
+load(url("https://github.com/santum4/dataexam/blob/main/df6.Rdata?raw=true"))
+
+
+fig <- plot_ly(df6, x = ~Year, y = ~Bank_Providers, type = 'bar', name = 'Bank Providers')
+fig <- fig %>% add_trace(y = ~Non_Bank_Providers, name = 'Non Bank Providers')
+fig <- fig %>% layout(title="<b>Fintechs gaining Market Share of Payment Transactions</b>", size = 12)
+fig <- fig %>% layout(yaxis = list(title = 'Percentages'), barmode = 'stack')
+
+fig
+
+```
+
+Source : [Pwc Future Shape of Banking - Page 9](https://www.pwc.com/im/en/publications/assets/pwc-the-future-shape-of-banking-v4.pdf) 
+
+### What are Banks doing to stay in the competition ?
+
+Different banks have formulated different strategies to be in the competition by being relevant and making sure they engage with different segments of the customers by servicing them with their different preferred methods (example - a [babyboomer](https://en.wikipedia.org/wiki/Baby_boomers) may still use checks whereas [Millennials](https://en.wikipedia.org/wiki/Millennials) and [Gen Z](https://en.wikipedia.org/wiki/Generation_Z) will prefer [mobile banking](https://en.wikipedia.org/wiki/Mobile_banking)).
+
+In this process, some banks are partnering with existing Fintechs, and some are creating their own mobile banking Apps, but the data below shows that their transformation to the 21st century banking experience are still slow and lot of work still remains to be done.
+
+The picture below shows the percentage of bank and credit union executives that see each company type as significant threat in coming decade and how that changed in 2021 from 2020. This will give an idea of the volatility and the fragmented financial services market in this era of emerging technological advancement necessary to serve each customer segment.
+
+```{r fintechbankperception, message=FALSE, warning=FALSE, echo=FALSE}
+library(plotly)
+load(url("https://github.com/santum4/dataexam/blob/main/df8.Rdata?raw=true"))
+
+
+fig2 <- plot_ly(df8, y = ~Sectors, x = ~Year2020, type = 'bar', name = 'Year 2020')
+fig2 <- fig2 %>% add_trace(x = ~Year2021, name = 'Year 2021')
+fig2 <- fig2 %>% layout(title="<b>Threat Perception of Bank and Credit Union Executives</b>", size = 12)
+fig2 <- fig2 %>% layout(xaxis = list(title = 'Percentages'), barmode = 'stack')
+
+
+fig2
+
+```
+
+
+Source : [Who financial institutions consider competitors](https://thefinancialbrand.com/107353/fintech-big-tech-partnership-trend-bank-credit-union-digital-innovation/)
+
+
+### Bank's Fintech Approach
+
+The reality is that "Banks can love or hate Fintechs, but they cannot ignore them". So, provided below is a graph that shows the percentages of banks and fintechs and how each have either collaborated or partnered or setup their own fintech subsidiaries for their survival.
+
+•	**Acquired fintech Companies - Citi, Barclays, BBVA    ** **<span style="color: red;"> 10% </span> **   
+•	**Set up venture funds to fund fintech companies - HSBC, Citi, SBERBANK, Santander    ** **<span style="color: darkorange;"> 20% </span> **     
+•	**Startup programs to incubate fintech companies - Rabobank, Barclays, Wells Fargo, BBVA, Unicredit, Commerzbank, Credit Agricole, State Street, ABN Amro, Lloyds Banking, Bank of Ireland    ** **<span style="color: deepskyblue;"> 43% </span> **     
+•	**Partnering with fintech Companies - HSBC, TD Bank, Metro Bank, Santander    ** **<span style="color: green;"> 20% </span> **    
+•	**Launched own fintech Subsidiaries - ABN Amro, Aegon    ** **<span style="color: blueviolet;"> 7% </span> **      
+
+
+```{r bankandfintechcollaboration, message=FALSE, warning=FALSE, echo=FALSE}
+library(plotly)
+load(url("https://github.com/santum4/dataexam/blob/main/df10.Rdata?raw=true"))
+
+
+fig3 <- plot_ly(df10, labels = ~Banks, values = ~Percentages, type = 'pie')
+fig3 <- fig3 %>% layout(title = 'Banks Fintech Approach')
+fig3 <- fig3 %>% layout(legend = list(orientation = 'h'))
+
+
+fig3
+
+```
+
+Source : [Finextra: Banks and Fintech](https://www.finextra.com/blogposting/15435/banks-and-fintech)
+
+### In Conclusion
+
+There are many things that Banks can do and there is no one single formula that would help banks give an edge over the competition posed by the disruptions (Fintechs) in the financial services industry. The one thing that is not changing is the changing landscape of the evolving customer segments, fueled by rapid technological transformation and banks or any service industry needs to provide personalized services targeted to specific segment of the population.
+To keep pace with evolving customer demands and retain a competitive advantage against disruption from fintechs, banks should focus on intelligent automation, partnerships with fintechs or build their own digital channel (mobile apps) for servicing their customers and it has to be done rapidly.
+
+
+
