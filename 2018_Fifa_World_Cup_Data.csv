@@ -1,0 +1,65 @@
+Round,Wk,Day,Date,Time,Home,xG,Score,xG,Away,Attendance,Venue,Referee,Match Report,Notes,GF,GA,Total Goals
+Group stage,1,Thu,6/14/2018,18:00 (10:00),Russia ru,1.1,5–0,0.3,sa Saudi Arabia,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Néstor Pitana,Match Report,,5,0,5
+Group stage,1,Fri,6/15/2018,17:00 (07:00),Egypt eg,0.3,0–1,1.2,uy Uruguay,"27,015",Stadion Central'nyj (Neutral Site),Björn Kuipers,Match Report,,0,1,1
+Group stage,1,Fri,6/15/2018,18:00 (10:00),Morocco ma,1.1,0–1,0.6,ir Iran,"62,548",Gazprom Arena (Neutral Site),Cüneyt Çak?r,Match Report,,0,1,1
+Group stage,1,Fri,6/15/2018,21:00 (13:00),Portugal pt,1.3,3–3,1.7,es Spain,"43,866",Olimpiyskiy Stadion Fisht (Neutral Site),Gianluca Rocchi,Match Report,,3,3,6
+Group stage,1,Sat,6/16/2018,13:00 (05:00),France fr,1.3,2–1,0.9,au Australia,"41,279",Kazan Arena (Neutral Site),Andrés Cunha,Match Report,,2,1,3
+Group stage,1,Sat,6/16/2018,16:00 (08:00),Argentina ar,1.8,1–1,0.9,is Iceland,"44,190",Otkrytie Arena (Neutral Site),Szymon Marciniak,Match Report,,1,1,2
+Group stage,1,Sat,6/16/2018,19:00 (11:00),Peru pe,1.8,0–1,0.9,dk Denmark,"40,502",Mordovia Arena (Neutral Site),Bakary Papa Gassama,Match Report,,0,1,1
+Group stage,1,Sat,6/16/2018,21:00 (14:00),Croatia hr,1.4,2–0,0.6,ng Nigeria,"31,136",Kaliningrad Stadium (Neutral Site),Sandro Ricci,Match Report,,2,0,2
+Group stage,1,Sun,6/17/2018,16:00 (07:00),Costa Rica cr,0.5,0–1,1.7,rs Serbia,"41,432",Cosmos Arena (Neutral Site),Malang Diédhiou,Match Report,,0,1,1
+Group stage,1,Sun,6/17/2018,18:00 (10:00),Germany de,1.8,0–1,0.8,mx Mexico,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Alireza Faghani,Match Report,,0,1,1
+Group stage,1,Sun,6/17/2018,21:00 (13:00),Brazil br,1.7,1–1,0.6,ch Switzerland,"43,109",Rostov Arena (Neutral Site),César Ramos,Match Report,,1,1,2
+Group stage,1,Mon,6/18/2018,15:00 (07:00),Sweden se,1.9,1–0,0.3,kr Korea Republic,"42,300",Stadion Nizhny Novgorod (Neutral Site),Joel Aguilar,Match Report,,1,0,1
+Group stage,1,Mon,6/18/2018,18:00 (10:00),Belgium be,1.2,3–0,0.7,pa Panama,"43,257",Olimpiyskiy Stadion Fisht (Neutral Site),Janny Sikazwe,Match Report,,3,0,3
+Group stage,1,Mon,6/18/2018,21:00 (13:00),Tunisia tn,0.9,1–2,2.4,eng England,"41,064",Volgograd Arena (Neutral Site),Wilmar Roldán,Match Report,,1,2,3
+Group stage,1,Tue,6/19/2018,15:00 (07:00),Colombia co,0.7,1–2,1.9,jp Japan,"40,842",Mordovia Arena (Neutral Site),Damir Skomina,Match Report,,1,2,3
+Group stage,1,Tue,6/19/2018,18:00 (10:00),Poland pl,0.8,1–2,1.2,sn Senegal,"44,190",Otkrytie Arena (Neutral Site),Nawaf Shukralla,Match Report,,1,2,3
+Group stage,2,Tue,6/19/2018,21:00 (13:00),Russia ru,0.9,3–1,1.5,eg Egypt,"64,468",Gazprom Arena (Neutral Site),Enrique Cáceres,Match Report,,3,1,4
+Group stage,2,Wed,6/20/2018,15:00 (07:00),Portugal pt,0.9,1–0,0.9,ma Morocco,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Mark Geiger,Match Report,,1,0,1
+Group stage,2,Wed,6/20/2018,18:00 (10:00),Uruguay uy,1.5,1–0,0.3,sa Saudi Arabia,"42,678",Rostov Arena (Neutral Site),Clément Turpin,Match Report,,1,0,1
+Group stage,2,Wed,6/20/2018,21:00 (13:00),Iran ir,0.3,0–1,2.1,es Spain,"42,718",Kazan Arena (Neutral Site),Andrés Cunha,Match Report,,0,1,1
+Group stage,2,Thu,6/21/2018,16:00 (07:00),Denmark dk,0.9,1–1,1.3,au Australia,"40,727",Cosmos Arena (Neutral Site),Antonio Matéu Lahoz,Match Report,,1,1,2
+Group stage,2,Thu,6/21/2018,20:00 (10:00),France fr,1.8,1–0,0.5,pe Peru,"32,789",Stadion Central'nyj (Neutral Site),Mohammed Abdulla Hassan,Match Report,,1,0,1
+Group stage,2,Thu,6/21/2018,21:00 (13:00),Argentina ar,1,0–3,1.6,hr Croatia,"43,319",Stadion Nizhny Novgorod (Neutral Site),Ravshan Irmatov,Match Report,,0,3,3
+Group stage,2,Fri,6/22/2018,15:00 (07:00),Brazil br,3,2–0,0.1,cr Costa Rica,"64,468",Gazprom Arena (Neutral Site),Björn Kuipers,Match Report,,2,0,2
+Group stage,2,Fri,6/22/2018,18:00 (10:00),Nigeria ng,1.3,2–0,1.3,is Iceland,"40,904",Volgograd Arena (Neutral Site),Matt Conger,Match Report,,2,0,2
+Group stage,2,Fri,6/22/2018,20:00 (13:00),Serbia rs,0.9,1–2,1.4,ch Switzerland,"33,167",Kaliningrad Stadium (Neutral Site),Felix Brych,Match Report,,1,2,3
+Group stage,2,Sat,6/23/2018,15:00 (07:00),Belgium be,5.2,5–2,1.5,tn Tunisia,"44,190",Otkrytie Arena (Neutral Site),Jair Marrufo,Match Report,,5,2,7
+Group stage,2,Sat,6/23/2018,18:00 (10:00),Korea Republic kr,0.8,1–2,1.8,mx Mexico,"43,472",Rostov Arena (Neutral Site),Milorad Maži?,Match Report,,1,2,3
+Group stage,2,Sat,6/23/2018,21:00 (13:00),Germany de,1.1,2–1,0.6,se Sweden,"44,287",Olimpiyskiy Stadion Fisht (Neutral Site),Szymon Marciniak,Match Report,,2,1,3
+Group stage,2,Sun,6/24/2018,15:00 (07:00),England eng,2.7,6–1,0.9,pa Panama,"43,319",Stadion Nizhny Novgorod (Neutral Site),Gehad Grisha,Match Report,,6,1,7
+Group stage,2,Sun,6/24/2018,20:00 (10:00),Japan jp,1,2–2,1.7,sn Senegal,"32,572",Stadion Central'nyj (Neutral Site),Gianluca Rocchi,Match Report,,2,2,4
+Group stage,2,Sun,6/24/2018,21:00 (13:00),Poland pl,0.8,0–3,1.3,co Colombia,"42,873",Kazan Arena (Neutral Site),César Arturo Ramos,Match Report,,0,3,3
+Group stage,3,Mon,6/25/2018,17:00 (09:00),Saudi Arabia sa,2.3,2–1,0.8,eg Egypt,"36,823",Volgograd Arena (Neutral Site),Wilmar Roldán,Match Report,,2,1,3
+Group stage,3,Mon,6/25/2018,18:00 (09:00),Uruguay uy,2.1,3–0,0.2,ru Russia,"41,970",Cosmos Arena (Neutral Site),Malang Diédhiou,Match Report,,3,0,3
+Group stage,3,Mon,6/25/2018,20:00 (13:00),Spain es,2.3,2–2,1.1,ma Morocco,"33,973",Kaliningrad Stadium (Neutral Site),Ravshan Irmatov,Match Report,,2,2,4
+Group stage,3,Mon,6/25/2018,21:00 (13:00),Iran ir,1.4,1–1,1.3,pt Portugal,"41,685",Mordovia Arena (Neutral Site),Enrique Cáceres,Match Report,,1,1,2
+Group stage,3,Tue,6/26/2018,17:00 (09:00),Denmark dk,0.2,0–0,0.4,fr France,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Sandro Ricci,Match Report,,0,0,0
+Group stage,3,Tue,6/26/2018,17:00 (09:00),Australia au,1.3,0–2,0.3,pe Peru,"44,073",Olimpiyskiy Stadion Fisht (Neutral Site),Sergey Karasev,Match Report,,0,2,2
+Group stage,3,Tue,6/26/2018,21:00 (13:00),Iceland is,1.9,1–2,0.7,hr Croatia,"43,472",Rostov Arena (Neutral Site),Antonio Matéu Lahoz,Match Report,,1,2,3
+Group stage,3,Tue,6/26/2018,21:00 (13:00),Nigeria ng,1.2,1–2,0.9,ar Argentina,"64,468",Gazprom Arena (Neutral Site),Cüneyt Çak?r,Match Report,,1,2,3
+Group stage,3,Wed,6/27/2018,17:00 (09:00),Korea Republic kr,1.8,2–0,2.9,de Germany,"41,835",Kazan Arena (Neutral Site),Mark Geiger,Match Report,,2,0,2
+Group stage,3,Wed,6/27/2018,19:00 (09:00),Mexico mx,1.6,0–3,2.5,se Sweden,"33,061",Stadion Central'nyj (Neutral Site),Néstor Pitana,Match Report,,0,3,3
+Group stage,3,Wed,6/27/2018,21:00 (13:00),Switzerland ch,1.2,2–2,1.4,cr Costa Rica,"43,319",Stadion Nizhny Novgorod (Neutral Site),Clément Turpin,Match Report,,2,2,4
+Group stage,3,Wed,6/27/2018,21:00 (13:00),Serbia rs,0.9,0–2,1.5,br Brazil,"44,190",Otkrytie Arena (Neutral Site),Alireza Faghani,Match Report,,0,2,2
+Group stage,3,Thu,6/28/2018,17:00 (09:00),Japan jp,0.9,0–1,0.9,pl Poland,"42,189",Volgograd Arena (Neutral Site),Janny Sikazwe,Match Report,,0,1,1
+Group stage,3,Thu,6/28/2018,18:00 (09:00),Senegal sn,0.4,0–1,0.2,co Colombia,"41,970",Cosmos Arena (Neutral Site),Milorad Maži?,Match Report,,0,1,1
+Group stage,3,Thu,6/28/2018,20:00 (13:00),England eng,1.1,0–1,0.8,be Belgium,"33,973",Kaliningrad Stadium (Neutral Site),Damir Skomina,Match Report,,0,1,1
+Group stage,3,Thu,6/28/2018,21:00 (13:00),Panama pa,0.7,1–2,2.5,tn Tunisia,"37,168",Mordovia Arena (Neutral Site),Nawaf Shukralla,Match Report,,1,2,3
+Round of 16,,Sat,6/30/2018,17:00 (09:00),France fr,1.7,4–3,1.1,ar Argentina,"42,873",Kazan Arena (Neutral Site),Alireza Faghani,Match Report,,4,3,7
+Round of 16,,Sat,6/30/2018,21:00 (13:00),Uruguay uy,0.4,2–1,1,pt Portugal,"44,287",Olimpiyskiy Stadion Fisht (Neutral Site),César Arturo Ramos,Match Report,,2,1,3
+Round of 16,,Sun,7/1/2018,17:00 (09:00),Spain es,1.3,(3) 1–1 (4),1.2,ru Russia,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Björn Kuipers,Match Report,Russia won on penalty kicks following extra time,1,1,2
+Round of 16,,Sun,7/1/2018,21:00 (13:00),Croatia hr,2.2,(3) 1–1 (2),0.8,dk Denmark,"40,851",Stadion Nizhny Novgorod (Neutral Site),Néstor Pitana,Match Report,Croatia won on penalty kicks following extra time,1,1,2
+Round of 16,,Mon,7/2/2018,18:00 (09:00),Brazil br,3.2,2–0,0.5,mx Mexico,"41,970",Cosmos Arena (Neutral Site),Gianluca Rocchi,Match Report,,2,0,2
+Round of 16,,Mon,7/2/2018,21:00 (13:00),Belgium be,2.7,3–2,0.7,jp Japan,"41,466",Rostov Arena (Neutral Site),Malang Diédhiou,Match Report,,3,2,5
+Round of 16,,Tue,7/3/2018,17:00 (09:00),Sweden se,1,1–0,0.4,ch Switzerland,"64,042",Gazprom Arena (Neutral Site),Damir Skomina,Match Report,,1,0,1
+Round of 16,,Tue,7/3/2018,21:00 (13:00),Colombia co,0.5,(3) 1–1 (4),1.7,eng England,"44,190",Otkrytie Arena (Neutral Site),Mark Geiger,Match Report,England won on penalty kicks following extra time,1,1,2
+Quarter-finals,,Fri,7/6/2018,17:00 (09:00),Uruguay uy,0.5,0–2,0.4,fr France,"43,319",Stadion Nizhny Novgorod (Neutral Site),Néstor Pitana,Match Report,,0,2,2
+Quarter-finals,,Fri,7/6/2018,21:00 (13:00),Brazil br,2.4,1–2,0.4,be Belgium,"42,873",Kazan Arena (Neutral Site),Milorad Maži?,Match Report,,1,2,3
+Quarter-finals,,Sat,7/7/2018,18:00 (09:00),Sweden se,0.7,0–2,0.7,eng England,"39,991",Cosmos Arena (Neutral Site),Björn Kuipers,Match Report,,0,2,2
+Quarter-finals,,Sat,7/7/2018,21:00 (13:00),Russia ru,1,(3) 2–2 (4),1.2,hr Croatia,"44,287",Olimpiyskiy Stadion Fisht (Neutral Site),Sandro Ricci,Match Report,Croatia won on penalty kicks following extra time,2,2,4
+Semi-finals,,Tue,7/10/2018,21:00 (13:00),France fr,1.6,1–0,0.4,be Belgium,"64,286",Gazprom Arena (Neutral Site),Andrés Cunha,Match Report,,1,0,1
+Semi-finals,,Wed,7/11/2018,21:00 (13:00),Croatia hr,1.9,2–1,0.6,eng England,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Cüneyt Çak?r,Match Report,Required Extra Time,2,1,3
+Third-place match,,Sat,7/14/2018,17:00 (09:00),Belgium be,1.1,2–0,0.8,eng England,"64,406",Gazprom Arena (Neutral Site),Alireza Faghani,Match Report,,2,0,2
+Final,,Sun,7/15/2018,18:00 (10:00),France fr,1.1,4–2,1.3,hr Croatia,"78,011",Olimpiyskiy stadion Luzhniki (Neutral Site),Néstor Pitana,Match Report,,4,2,6
