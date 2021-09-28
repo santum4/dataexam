@@ -1,0 +1,480 @@
+---
+title: "HW3 R Markdown"
+author: "Santanu Mukherjee"
+date: "9/26/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(corrr)
+library(gridExtra)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+```
+
+## R Markdown
+### Chapter 2 page 53: 
+#### Q5
+
+What are the advantages and disadvantages of a very flexible (versus a less flexible) approach for regression or classification? Under what circumstances might a more flexible approach be preferred to a less flexible approach? When might a less flexible approach be preferred?
+
+**Advantages** The advantages for a very flexible approach for regression or classification are obtaining a better fit for generalized non-linear models, whereby the objective is to reduce bias.        
+
+**Disadvantages** The disadvantages for a very flexible approach for regression or classification are that it leads to overfitting, thus requiring the introduction of greater number of parameters and hence greater amount of noise.     
+
+**Preference for more flexible approach** So, in prediction problems, where the main objective is to predict and the interpretation of the data (results) does not matter that much, a more flexible approach would be preferred to a less flexible approach.    
+
+**Preference for less flexible approach** Now, where interpretation of the data (results) is important, a less flexible approach is preferred to a more flexible approach, so that the chances of overfitting (increase of error or noise) is greatly reduced.
+
+
+
+#### Q6
+
+Describe the differences between a parametric and a non-parametric statistical learning approach. What are the advantages of a para metric approach to regression or classification (as opposed to a non-parametric approach)? What are its disadvantages?
+
+**Parametric VS Non-parametric statistical learning**
+
+In the parametric approach, the objective is to assume a functional form and estimate the parameters in our regression or classification study.
+
+However, in a non-parametric approach, there is no predetermined functional form and hence no parametric form is assumed. So, non-parametric regression or classification requires larger sample sizes compared to parametric approach.
+
+**Advantages and Disadvantages**
+
+So, the advantages of a parametric approach to regression or classification are that the model is much more simplified and requires less parameters and so, not many observations are required compared to a non-parametric approach.
+
+However, the disadvantages of a parametric approach to regression or classification are potential inaccuracies to the estimated parameters of the assumed functional form if the function assumed is wrong.
+
+For non-parametric approach, the advantage is that no functional approach is assumed and based on data, there are times when it gives much more accurate results.
+
+For non-parametric approach, the disadvantage is there are many parameters and there can be overfitting.
+
+
+
+#### Q7
+
+The table below provides a training data set containing six observations, three predictors, and one qualitative response variable.
+
+```{r Q7,  echo=FALSE, warning=FALSE, message=FALSE}
+X1 <- c(0,2,0,0,-1,1)
+X2 <- c(3,0,1,1,0,1)
+X3 <- c(0,0,3,2,1,1)
+Y <- c("Red","Red","Red","Green","Green","Red")
+table <- data.frame(X1,X2,X3,Y)
+table
+
+```
+
+Suppose we wish to use this data set to make a prediction for Y when X1 = X2 = X3 = 0 using K-nearest neighbors.
+
+(a) Compute the Euclidean distance between each observation and the test point, X1 = X2 = X3 = 0.
+
+(b) What is our prediction with K = 1? Why?
+
+(c) What is our prediction with K = 3? Why?
+
+(d) If the Bayes decision boundary in this problem is highly nonlinear, then would we expect the best value for K to be large or small? Why?
+
+**Answers**
+
+(a) The Euclidean distance has been computed and the column Euclidean_Distance displays that.
+
+```{r Q7a,  echo=FALSE, warning=FALSE, message=FALSE}
+table$Euclidean_Distance <- round(sqrt(X1*X1 + X2*X2 + X3*X3),3)
+table
+
+```
+
+(b) Green. Observation #5 is the single nearest neighbor for K = 1.
+
+(c) Red. Observations #2, #5, #6 are the closest neighbors for K = 3.  For 2 observations (# 2 and # 6 ) it is Red, 5 is Green. So the answer is Red.
+
+(d) Small. A small K would perform better because it would be 'flexible' for a non-linear decision boundary, whereas a large K would have a smoothing effect and would try to fit a more linear boundary because it takes more points into consideration.
+
+
+
+### Chapter 3 page 120: 
+#### Q1
+
+Describe the null hypotheses to which the p-values given in Table 3.4 correspond. Explain what conclusions you can draw based on these p-values. Your explanation should be phrased in terms of sales, TV, radio, and newspaper, rather than in terms of the coefficients of the linear model.
+
+
+The null hypotheses associated with table 3.4 are that advertising budgets of “TV”, “radio” or “newspaper” do not have an effect on sales. 
+More precisely $H(1)0:β1=0$, $H(2)0:β2=0$ and $H(3)0:β3=0$.     
+The corresponding p-values are highly significant for “TV” and “radio” and not significant for “newspaper”; so we reject the null hypothesis.
+
+
+#### Q2
+
+Carefully explain the differences between the KNN classifier and KNN regression methods.
+
+
+The KNN classifier is typically used to solve classification problems (those with a qualitative response) by identifying the neighborhood of $x0$ and then estimating the conditional probability $P(Y=j|X=x0)$ for class $j$ as the fraction of points in the neighborhood whose response values equal $j$.     
+However, the KNN regression method is used to solve regression problems (those with a quantitative response) by again identifying the neighborhood of $x0$ and then estimating $f(x0)$ as the average of all the training responses in the neighborhood.
+
+
+
+#### Q3
+
+
+Suppose we have a data set with five predictors, $X1 = GPA$, $X2 = IQ$, $X3 = Gender (1 for Female and 0 for Male)$, $X4 = Interaction between GPA and IQ$, and $X5 = Interaction between GPA and Gender$. The response is starting salary after graduation (in thousands of dollars). Suppose we use least squares to fit the model, and get $βˆ0 = 50$, $βˆ1 = 20$, $βˆ2 = 0.07$, $βˆ3 = 35$, $βˆ4 = 0.01$, $βˆ5 = −10$.   
+
+(a) Which answer is correct, and why?  
+    i. For a fixed value of IQ and GPA, males earn more on average than females.   
+    ii. For a fixed value of IQ and GPA, females earn more on average than males.   
+    iii. For a fixed value of IQ and GPA, males earn more on average than females provided that the GPA is high enough.    
+    iv. For a fixed value of IQ and GPA, females earn more on average than males provided that the GPA is high enough.             
+
+    
+   (b) Predict the salary of a female with IQ of 110 and a GPA of 4.0.   
+   
+(c) True or false: Since the coefficient for the GPA/IQ interaction term is very small, there is very little evidence of an interaction effect. Justify your answer.  
+
+
+**Answers**
+  
+(a)   The least square line is given by        
+          $y^=50+20GPA+0.07IQ+35Gender+0.01GPA×IQ−10GPA×Gender$    
+  so for the *MALES*, it is       
+          $y^=50+20GPA+0.07IQ+0.01GPA×IQ$,     
+  and for the *FEMALES*, it is       
+          $y^=85+10GPA+0.07IQ+0.01GPA×IQ$.   
+          
+So the starting salary for *MALES* is higher than for *MALES* on average if and only if    
+            $50+20GPA ≥ 85+10GPA$   which is equivalent to $GPA≥3.5$.     
+
+Once the GPA is high enough, males earn more on average.     
+   
+   Therefore **iii.** is the right answer.
+
+
+(b) Y(Gender = 1, IQ = 110, GPA = 4.0)
+= 50 + 20 * 4 + 0.07 * 110 + 35 + 0.01 (4 * 110) - 10 * 4
+= **137.1**    
+   
+So, **$137,100** is the starting salary.  
+
+
+    
+
+(c)  False. To verify if the GPA/IQ has an impact on the quality of the model we need to test the hypothesis $H0:β4^=0$ and look at the p-value associated with the t or the F statistic to draw a conclusion.
+
+
+#### Q4
+
+
+I collect a set of data $(n = 100 observations)$ containing a single predictor and a quantitative response. I then fit a linear regression
+model to the data, as well as a separate cubic regression, i.e. $Y = β0 + β1X + β2X2 + β3X3 + ϵ$.   
+   
+(a)   Suppose that the true relationship between $X$ and $Y$ is linear, i.e. $Y = β0 + β1X + ϵ$. Consider the **training residual sum of squares (RSS)** for the linear regression, and also the **training RSS** for the cubic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.
+
+(b)   Answer (a) using test rather than training RSS.    
+     
+(c)   Suppose that the true relationship between X and Y is not linear, but we don’t know how far it is from linear. Consider the training RSS for the linear regression, and also the training RSS for the cubic regression. Would we expect one to be lower than the other, would we expect them to be the same, or is there not enough information to tell? Justify your answer.      
+     
+     
+(d)   Answer (c) using test rather than training RSS.
+
+
+**Answers**
+
+(a)   Without knowing more details about the training data, it is difficult to know which training $RSS$ is lower between **linear or cubic**. However, as the true relationship between $X$ and $Y$ is linear, we may expect the least squares line to be close to the true regression line, and consequently the $RSS$ for the linear regression may be lower than for the cubic regression.
+
+
+(b)   So, when we use test data, even in that case the **test RSS** depends upon the test data, so we do not have enough information to come to a conclusion. However, we may assume that polynomial regression will have a higher **test RSS** as the overfit from training would have more error than the linear regression.
+
+
+(c)    Polynomial regression has lower **training RSS** than the linear fit because of higher flexibility. Now, irrespective of what the underlying true relationship is, it is obvious that the more flexible model will have closer follow points and reduce **training RSS**. 
+
+
+
+(d)   Based on what is given, there is not enough information to tell which **test RSS** would be lower for either regression given the question where it states *“how far it is from linear”*. If it is closer to linear than cubic, the linear regression **test RSS** could be lower than the cubic regression **test RSS**.      
+     On the other hand, if it is closer to cubic than linear, the cubic regression **test RSS** could be lower than the linear regression **test RSS**. This is due to bias-variance tradeoff; it is not clear what level of flexibility will fit data better.
+
+
+
+
+#### Q5
+
+
+Consider the fitted values that result from performing linear regression without an intercept.     
+
+   In this setting, the *i*th fitted value takes the form   $\hat{y_{i}}$ = $x_{i}$$\hat{β}$,        
+   
+   where  $\hat{β}$ = ($\sum_{i=1}^{n} x_{i}y_{i}$) / ($\sum_{i=1}^{n} x_{i}^2$).    
+   
+   Show that we can write $\hat{y_{i}}$ =  $\sum_{j=1}^{n} a_{j}y_{j}$    
+   
+   What is   $a_{i}$ ?
+   
+   
+   *Note: We interpret this result by saying that the fitted values from linear regression are linear combinations of the response values.*
+   
+
+**Answers**
+
+
+So , now we have $\hat{y_{i}}$ = (${x_{i}}$) * ($\sum_{j=1}^{n} x_{j}y_{j}$) / ($\sum_{i=1}^{n} x_{i}^2$),  
+
+where ${a_{j}}$ = (${x_{i}}$) * (${x_{j}}$) / ($\sum_{i=1}^{n} x_{i}^2$)
+
+
+
+#### Q8
+
+
+This question involves the use of simple linear regression on the Auto data set.    
+
+(a) Use the lm() function to perform a simple linear regression with mpg as the response and horsepower as the predictor. Use the
+summary() function to print the results. Comment on the output.   
+For example:   
+
+i. Is there a relationship between the predictor and the response?
+ii. How strong is the relationship between the predictor and the response?
+iii. Is the relationship between the predictor and the response positive or negative?
+iv. What is the predicted mpg associated with a horsepower of 98? What are the associated 95 %  confidence and prediction intervals?
+
+(b)   Plot the response and the predictor. Use the abline() function to display the least squares regression line.
+
+(c)   Use the plot() function to produce diagnostic plots of the least squares regression fit. Comment on any problems you see with the fit.
+
+
+**Answers**
+
+
+(a)  Performing a simple linear regression on the Auto dataset   
+
+```{r Q8ai,  echo=FALSE, warning=FALSE, message=FALSE}
+library(ISLR)
+data(Auto)
+lmauto <- lm(mpg ~ horsepower, data = Auto)
+summary(lmauto)
+
+```
+
+i. The answer to this question can be given by testing the hypothesis ${H_{0}}$:${β_{i}}$=0 ∀i. The p-value is less than 0.05 and hence we can reject the null hypothesis and can conclude there is statistically significant relationship between “horsepower” and “mpg”.
+
+
+ii) The R-square is 0.6059 which means that 60.59% of the variability in “mpg” can be explained using “horsepower” and that is why this shows as a strong relationship.
+
+
+iii) As the coefficient of predictor "horsepower" is *negative*, the relationship between response and predictor is negative. The more horsepower an automobile has the linear regression indicates the less mpg fuel efficiency the automobile will have.
+   
+
+iv. The below lists the predicted *mpg* asssociated with a "horsepower" of 98, along with the 95% confidence and prediction intervals.
+
+```{r Q8aiv,  echo=FALSE, warning=FALSE, message=FALSE}
+predict(lmauto, data.frame(horsepower = 98), interval = 'confidence')
+predict(lmauto, data.frame(horsepower = 98), interval = 'prediction')
+
+``` 
+
+Predicted value of mpg is 24.46708.Confidence interval is (23.97308, 24.96108) and prediction interval is (14.8094, 34.12476).
+
+
+(b) The below shows the graph between the response and the predictor.
+
+```{r Q8b,  echo=FALSE, warning=FALSE, message=FALSE}
+plot(Auto$horsepower, Auto$mpg, main = "Scatterplot of mpg vs. horsepower", xlab = "horsepower", ylab = "mpg", col = "blue", lwd=2)
+abline(lmauto, col = "red", lwd = 3)
+
+``` 
+      
+
+(C)  Plot() function to produce diagnostics plots of the least squares regression fit.
+
+
+```{r Q8c,  echo=FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(2, 2))
+plot(lmauto)
+
+``` 
+      
+The plot of residuals versus fitted values indicates that the data is non-linear. The plot of standardized residuals versus leverage indicates the presence of a few outliers and a few high leverage points.
+
+
+
+#### Q9
+
+
+This question involves the use of multiple linear regression on the “Auto” data set.
+
+(a)   Produce a scatterplot matrix which include all the variables in the data set.
+
+
+```{r Q9a,  echo=FALSE, warning=FALSE, message=FALSE}
+pairs(Auto)
+
+``` 
+
+
+(b)   Compute the matrix of correlations between the variables using the function cor(). You will need to exclude the “name” variable, which        is qualitative.
+
+
+```{r Q9b,  echo=FALSE, warning=FALSE, message=FALSE}
+names(Auto)
+cor(Auto[1:8])
+``` 
+
+
+(c) Use the lm() function to perform a multiple linear regression with “mpg” as the response and all other variables except “name” as the predictors. Use the summary() function to print the results. Comment on the output. For instance :
+
+i. Is there a relationship between the predictors and the response ?
+
+```{r Q9ci,  echo=FALSE, warning=FALSE, message=FALSE}
+lmauto9 <- lm(mpg ~ . - name, data = Auto)
+summary(lmauto9)
+
+```
+
+i. The answer to this question can be given by testing the hypothesis ${H_{0}}$:${β_{i}}$=0 ∀i. The p-value is less than 0.05 and hence we can reject the null hypothesis and can conclude there is statistically significant relationship between "mpg" and other predictors.
+
+
+
+ii. Which predictors appear to have a statistically significant relationship to the response ?
+
+The answer to this question can be given by checking the p-values associated with each predictor’s t-statistic. We may conclude that all predictors are statistically significant except “cylinders”, “horsepower” and “acceleration”.
+
+iii. What does the coefficient for the “year” variable suggest ?     
+
+The coefficient ot the “year” variable suggests that the average effect of an increase of 1 year is an increase of 0.750773 in “mpg” (all other predictors remaining constant). In other words, cars become more fuel efficient every year by almost 0.75 mpg / year.
+
+
+(d)   Use the plot() function to produce diagnostic plots of the linear regression fit. Comment on any problems you see with the fit. Do the residual plots suggest any unusually large outliers ? Does the leverage plots identify any observations with unusually high leverages ?
+
+```{r Q9d,  echo=FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(2, 2))
+plot(lmauto9)
+
+``` 
+
+The plot of residuals versus fitted values indicates the presence of mild non-linearity in the data. The plot of standardized residuals versus leverage indicates the presence of a few outliers and one high leverage point (point 14).
+
+
+(e)   Use the * and : symbols to fit linear regression models with interaction effects. Do any interactions appear to be statistically
+      significant ?
+
+By looking at the correlation matrix, we obtained the two highest correlated pairs and used them in picking interaction effects.
+
+```{r Q9e,  echo=FALSE, warning=FALSE, message=FALSE}
+lmauto9E <- lm(mpg ~ cylinders * displacement+displacement * weight, data = Auto[, 1:8])
+summary(lmauto9E)
+``` 
+
+From the p-values, we can see that the interaction between displacement and weight is statistically significant, while the interaction between cylinders and displacement is not.
+
+
+(f)   Try a few different transformations of the variables, such as log($X$), $\sqrt{X}$, $X^2$. Comment on your findings.
+
+
+```{r Q9f,  echo=FALSE, warning=FALSE, message=FALSE}
+par(mfrow = c(3, 3))
+plot(log(Auto$horsepower), Auto$mpg)
+plot(sqrt(Auto$horsepower), Auto$mpg)
+plot((Auto$horsepower)^2, Auto$mpg)
+plot(log(Auto$weight), Auto$mpg)
+plot(sqrt(Auto$weight), Auto$mpg)
+plot((Auto$weight)^2, Auto$mpg)
+``` 
+       
+Examined both "horsepower" and "cylinders" as predictors.It seems that the log transformation gives the most linear looking plot.
+
+
+#### Q11
+
+
+Q11. In this problem we will investigate the t-statistic for the null hypothesis ${H_{0}}$:$β$=0 in simple linear regression without an intercept. To begin, we generate a predictor $x$ and a response $y$ as follows.
+
+```{r Q11,  echo=FALSE, warning=FALSE, message=FALSE}
+set.seed(1)
+x <- rnorm(100)
+y <- 2 * x + rnorm(100)
+``` 
+
+(a)  Perform a simple linear regression of $y$ onto $x$, without an intercept. Report the coefficient estimate $\hat{β}$, the standard error       of this coefficient estimate, and the t-statistic and p-value associated with the null hypothesis ${H_{0}}$. Comment on these results.
+
+
+```{r Q11a,  echo=FALSE, warning=FALSE, message=FALSE}
+lmQ11a <- lm(y ~ x + 0)
+summary(lmQ11a)
+``` 
+
+Based on the summary above, here we have a value of 1.9939 for $\hat{β}$, a value of 0.1065 for the standard error, a value of 18.73 for the t-statistic and a very small p-value. As the p-value is very small, we reject ${H_{0}}$.
+
+
+(b)   Now perform a simple linear regression of $x$ onto $y$, without an intercept. Report the coefficient estimate $\hat{β}$, the standard error of this coefficient estimate, and the t-statistic and p-value associated with the null hypothesis ${H_{0}}$. Comment on these results.
+
+```{r Q11b,  echo=FALSE, warning=FALSE, message=FALSE}
+lmQ11b <- lm(x ~ y + 0)
+summary(lmQ11b)
+``` 
+
+Based on the summary above, here we have a value of 0.39111 for $\hat{β}$, a value of 0.02089 for the standard error, a value of 18.73 for the t-statistic and a very small p-value.  As the p-value is very small, we reject ${H_{0}}$.
+
+
+(c)   What is the relationship between the results obtained in (a) and (b) ?
+
+
+Based on the linear regression results, We see that there is same value for the t-statistic and consequently the same value for the corresponding p-value. Both results in (a) and (b) reflect the same line created in (a). In other words, $y=2x+ε$ can also be written as  $x=0.5(y−ε)$.
+
+     
+       
+             
+
+(d)   Question      
+        
+      
+![Question 11 D - Question](https://github.com/santum4/dataexam/raw/main/Problem%2011%20D%20-%20Question1.png)
+
+         
+          
+       
+
+![Question 11 D - Answer](https://github.com/santum4/dataexam/raw/main/Problem%2011%20D%20-%20Ans1.png)
+
+
+
+
+
+
+
+Now let us verify this result numerically.
+
+
+```{r Q11d,  echo=FALSE, warning=FALSE, message=FALSE}
+n <- length(x)
+tstat <- sqrt(n - 1)*(x %*% y)/sqrt(sum(x^2) * sum(y^2) - (x %*% y)^2)
+as.numeric(tstat)
+``` 
+   
+We see that the t above is exactly the t-statistic given in the summary of “lmQ11b”.
+
+
+
+(e)   Using the results from (d), argue that the t-statistic for the regression of $y$ onto $x$ is the same t-statistic for the regression of $x$ onto $y$. 
+
+**Answer :** Based on the data, it can be said that if we replace ${x_{i}}$ by ${y_{i}}$ in the formula for the t-statistic, the result would be the same.
+
+
+(f)   In R, show that when regression is performed with an intercept, the t-statistic for ${H_{0}}$:${β_{1}}$=0 is the same for the regression
+      of $y$ onto $x$ as it is the regression of $x$ onto $y$.
+
+```{r Q11f1,  echo=FALSE, warning=FALSE, message=FALSE}
+lmQ11f1 <- lm(y ~ x)
+summary(lmQ11f1)
+``` 
+
+```{r Q11f2,  echo=FALSE, warning=FALSE, message=FALSE}
+lmQ11f2 <- lm(x ~ y)
+summary(lmQ11f2)
+``` 
+
+**Answer :** Based on the data, we see that t-statistic for “lmQ11f1” and “lmQ11f2” are both equal to 18.56.
+
+
+
+
+
