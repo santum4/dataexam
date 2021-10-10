@@ -1,0 +1,229 @@
+---
+title: "HW2 R Markdown"
+author: "Santanu Mukherjee"
+date: "10/10/2021"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(data.table)
+```
+
+
+## R Markdown
+### Problem 1
+**Answer 1a**
+
+Craps is a dice game in which players bet on the outcomes of a pair of dice. 
+
+<span style="color: blue;">Simplest way to play and rules of the game</span>
+
+
+A **'Natural'** means that the result of rolling the pair of dice (sum of the two dice) is a 7 or a 11. When this happens, the person wins and get to roll the pair of dice again.
+
+When the result of rolling the pair of dice (sum of the two dice) is 2, 3, or 12, it is called **"craps"** or **"crapping out"**, and anyone betting the Pass line loses.
+
+The other possible outcomes are the point numbers: 4, 5, 6, 8, 9, and 10. If the shooter rolls one of these numbers on the come-out roll, this establishes the **"point"** – to "pass" or "win", the point number must be rolled again before a seven to win.
+
+
+**Answer 1b and 1c (Monte Carlo Simulation)**
+
+
+
+```{r Problem 1b,  echo=TRUE, warning=FALSE, message=FALSE}
+
+playcraps = function(){
+    num = append(1:6, 5:1)
+    first.roll = sample(2:12, 1, prob = num /36)
+    if (first.roll %in% c(2,3,12)){
+        return(0)
+    } else if (first.roll %in% c(7,11)){
+        return(1)
+    } else  {
+            point = first.roll
+            next.roll = sample(2:12, 1, prob = num /36)
+            while (next.roll != point  && next.roll !=7) {
+              next.roll = sample(2:12, 1, prob = num /36)
+            }
+            if (next.roll== point){
+              return(1)
+            }
+            return(0)
+            
+    }
+}
+
+```
+
+
+
+```{r Problem 1c,  echo=TRUE, warning=FALSE, message=FALSE}
+set.seed(1)
+sims  = 10000     # Number of times the game is simulated
+n     = 10        # Number of games played
+i.bet = 10        # Initial bet of $ 10
+
+earnings = rep (0,sims)
+
+for (t in 1:sims){
+    bet = i.bet
+    tmp = 0
+    for (i in 1:n) {
+      res = playcraps()
+      if (res==0){
+        tmp = tmp - bet
+        bet = 2*bet
+      
+      }
+      if (res==1){
+        tmp = tmp + bet
+        bet = i.bet
+      }
+    }
+    #print(t)
+    earnings[t] = tmp
+  
+}
+
+
+print(paste('The expected amount ( in dollars) after playing for 10 games is :', mean(earnings))) 
+
+
+
+hist(earnings)
+
+
+n = 10000
+res = rep(-99,n)
+for (i in 1:n) {
+  res[i] = playcraps()
+  
+}
+
+mean(res)
+
+print(paste('The probability of expected winning is :', mean(res))) 
+
+
+```
+
+I do not think this is a good betting strategy for winning.
+
+
+
+### Problem 2
+
+Life in years for Microwave Magnetron tube has exponential distribution with rate parameter $\beta$
+
+**Answer 2a, 2b & 2c**
+
+![Problem 2-a-b-c](https://github.com/santum4/dataexam/raw/main/HW2-Problem%202-a-b-c.png)
+
+```{r Problem 2a,  echo=FALSE, warning=FALSE, message=FALSE}
+
+l.exp = function(beta, y) {
+n = length(y)
+sumy = sum(y)
+l = (beta^n)*exp(-sumy*beta)
+return(l)
+}
+
+df2 <- read_csv("https://github.com/santum4/dataexam/raw/main/Manufacturer.csv")
+df2final <- df2$x
+#str(df2final)
+
+beta = seq(.00001, .20, length=1000)
+likbeta = l.exp(beta,df2final)
+
+plot(beta, likbeta, type='l', lwd=2, xlab=expression(beta), ylab=expression(paste('L(',beta,')')) )
+
+
+```
+
+**Graph for Answer 2c**
+
+
+
+```{r Problem 2c,  echo=TRUE, warning=FALSE, message=FALSE}
+
+x = seq(.0001, .03, length=1000)
+
+plot(x, dgamma(x, length(df2) + 1 ,rate=sum(df2$x)), main='Part c',
+type='l', lwd=2, xlab=expression(beta), ylab='Density')
+
+
+```
+
+
+
+
+
+**Answer 2d**
+
+![](https://github.com/santum4/dataexam/raw/main/HW2-Problem%202-d.png)
+
+**Answer 2e and 2g**
+
+
+```{r Problem 2e,  echo=FALSE, warning=FALSE, message=FALSE}
+
+# (1-alpha) 100% equal tailed (Quantile) credible interval 
+# Quantile Function for equal credible interval
+
+m <- round(qgamma(0.025,(NROW(df2) + 1),sum(df2final)),7)
+n <- round(qgamma(0.975,(NROW(df2) + 1),sum(df2final)),7)
+
+
+r1 <- nrow(df2)
+
+xbar = (sum(df2final))/r1
+
+
+          
+
+qgamma(c(0.025, 0.975), shape = r1 + 1, rate=r1 * xbar)
+
+print(paste('Equal_Tailed Credible Interval for rate :', m , n)) 
+
+print(paste('Equal_Tailed Credible Interval for life of magnetron tube:', round((1/n),4) , round((1/m),4))) 
+
+```
+
+So, the 95% Bayesian credible interval for the average length of life of a magnetron tube under the uniform prior is between **5.69 and 8.41 years**
+
+
+**Answer 2f**
+
+The posterior probability that the average length of life of a magnetron tube is less than 10 years
+
+p(1/$\beta$ < 10 |x) =  p($\beta$ > 0.10 |x) =  1 - pgamma(0.10,100,691.74)
+
+```{r Problem 2f,  echo=TRUE, warning=FALSE, message=FALSE}
+
+# (1-alpha) 100% equal tailed (Quantile) credible interval 
+# Quantile Function for equal credible interval
+
+w <- round(pgamma(0.10,NROW(df2),sum(df2final)),4)
+1 - w
+```
+
+p(1/$\beta$ < 10 |x) =  p($\beta$ > 0.10 |x) =  1 - pgamma(0.10,100,691.74) = **0.9997**
+
+
+**Answer 2g**
+
+
+
+So, the 95% Bayesian credible interval for $\beta$   is : **(0.1189264, 0.1758273)**   AND    
+    the 95% Bayesian credible interval for $1/\beta$ is : **(5.68784, 8.4086)**. 
+
+Equal tailed credit interval is INVARIANT UNDER ONE-TO-ONE TRANSFORMATION.
+
+
+
