@@ -1,0 +1,339 @@
+---
+title: "HW4 R Markdown"
+author: "Santanu Mukherjee"
+date: "10/12/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(corrr)
+library(gridExtra)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(olsrr)
+library(ggplot2)
+library(ggpubr)
+library(nortest)
+library(lindia)
+library(car)
+library(outliers)
+
+```
+
+
+## R Markdown
+### Problem 1
+#### Reading the file *"CDI_data.rda"*
+
+
+```{r P1,  echo=FALSE, warning=FALSE, message=FALSE}
+df1 <- readRDS(url("https://github.com/santum4/dataexam/blob/main/CDI_data.rda?raw=true"))
+
+
+colnames(df1)[8] <- 'y'
+colnames(df1)[5] <- 'x1'
+colnames(df1)[16] <- 'x2'
+x345 <- as.factor(df1[,17])
+
+df1$x3 <- as.factor(ifelse(x345==1,1,0))
+df1$x4 <- as.factor(ifelse(x345==2,1,0))
+df1$x5 <- as.factor(ifelse(x345==3,1,0))
+
+```
+
+```{r P1a,  echo=FALSE, warning=FALSE, message=FALSE}
+lmp1a <- lm(y ~ x1 + x2 + x3 + x4 + x5, data = df1)
+summary(lmp1a)
+
+```
+
+
+**Answer 1a**
+
+If our coefficients were ${\beta_{3}}$, ${\beta_{4}}$, ${\beta_{5}}$ for ${x_{3}}$ , ${x_{4}}$ and ${x_{5}}$, then the null hypothesis is ${H_{0}}$:${\beta_{i}}$=0 for all i = 3,4,5    
+
+Based on the linear regression output data. we see that using a significance level of $\alpha=0.05$, we can reject the null hypothesis as one of the p=values for one of the $\beta$ values are significant.
+In other words, geographic effects are present for this response variable.
+
+```{r P1b,  echo=FALSE, warning=FALSE, message=FALSE}
+lmp1b <- lm(y ~ x3 + x4 + x5, data = df1)
+summary(lmp1b)
+
+lmp1b1 <- lm(y ~ x1 + x2, data = df1)
+summary(lmp1b1)
+anova(lmp1b1,lmp1a)
+
+
+```
+
+
+**Answer 1b**
+
+Based on the results of the ANOVA, it can be said that one or more geographic factors are significant.
+
+
+### Problem 2
+
+```{r P2,  echo=FALSE, warning=FALSE, message=FALSE}
+
+df2 <- readRDS(url("https://github.com/santum4/dataexam/blob/main/CDI_data.rda?raw=true"))
+
+df2$y = df2$TotCrimes/(df2$TotalPop/100000)
+df2 = subset(df2, select=-c(TotCrimes, TotalPop, County, State, Region))
+
+row_odd <- seq_len(nrow(df2)) %% 2 
+test <- df2[row_odd == 1, ]
+train <- df2[row_odd == 0, ]
+
+
+```
+
+
+**Answer 2a**
+
+**Scatter Plot for Problem 2 (a) AND Correlation Matrix** *(rounded to nearest 3 decimal places)* **for Problem 2 (a) below**
+
+
+```{r P2a,  echo=FALSE, warning=FALSE, message=FALSE}
+
+pairs(subset(df2, select=-c(y)), pch = 19,  cex = 0.2)
+corMatrix <- cor(subset(df2, select=-c(y)))
+corMatrix[corMatrix >=.75] <- 'High'
+corMatrix[corMatrix <.75] <- ''
+corMatrix
+
+```
+
+Yes there is evidence of strong linear pairwise associations among some predictor variables (NumPhysicians, TotalPIncome) and (NumHospitalBeds , TotalPIncome) 
+
+
+**Answer 2b**
+
+
+There are several model selection techniques like Forward Selection and Backward Elimination.Using sequential selection process
+
+```{r P2b,  echo=TRUE, warning=FALSE, message=FALSE}
+
+lmp2b.all <- lm(y ~ ., data = train)
+lmp2b.f = ols_step_forward_p(lmp2b.all, penter = 0.05)
+lmp2b.b = ols_step_backward_p(lmp2b.all, prem = 0.1)
+lmp2b.s = ols_step_both_p(lmp2b.all, pent = 0.05, prem = 0.1)
+
+summary(lmp2b.all)
+summary(lmp2b.f$model)
+summary(lmp2b.b$model)
+summary(lmp2b.s$model)
+
+```
+
+Based on the models above, the attractive one to me is the first one (Selection Summary)
+
+
+
+
+**Answer 2c  **
+
+```{r P2ci,  echo=FALSE, warning=FALSE, message=FALSE}
+
+lmp2c1 <- lm(y~., data=test)
+lmp2c1.f.val = ols_step_forward_p(lmp2c1, penter = 0.05)
+summary(lmp2c1.f.val$model)
+summary(lmp2b.f$model)
+
+mean(lmp2b.f$model$residuals^2)
+mean(lmp2c1.f.val$model$residuals^2)
+
+```
+
+Based on the regression results, the model fitted to the test data set does not yield similar estimates as the model fitted to the model-building data set.
+
+**Answer 2d **
+
+
+```{r P2d,  echo=FALSE, warning=FALSE, message=FALSE}
+
+
+
+# MSE for training data
+
+MSEtr <- mean((predict(lmp2b.all, data=train) - train$y)^2)
+
+print (paste("The MSE for training data set is :", MSEtr))
+
+MSEte <- mean((predict(lmp2b.all, data=test) - test$y)^2)
+
+print (paste("The MSE for test data set is :", MSEte))
+
+
+```
+
+So, the test MSE (**MSEte**) is greater than the training MSE (**MSEtr**). This can happen because of outliers. There is evidence of Bias here in the model.
+
+
+**Answer 2e **
+
+
+```{r P2e,  echo=FALSE, warning=FALSE, message=FALSE}
+
+lmp2c3 <- lm(y~., data=df2)
+lmp2c3.f.combined = ols_step_forward_p(lmp2c3, penter = 0.05)
+summary(lmp2c3.f.combined$model)
+summary(lmp2b.f$model)
+```
+
+The estimated coefficients and their standard deviations for the combined training and test data sets is appreciably different from the estimated coefficients and their standard deviations of the model fitted to the training data set.
+Ideally I would expect as there are many factors here, the 2 datasets have different total number of rows, number of predictors.
+
+
+
+
+### Problem 3
+
+**Answer 3a**
+
+```{r P3a,  echo=FALSE, warning=FALSE, message=FALSE}
+
+df3 <- readRDS(url("https://github.com/santum4/dataexam/blob/main/CDI_data.rda?raw=true"))
+
+df3$y = df3$TotCrimes/100000
+
+df3_problem3 = df3[, c(6,8,9,13,14,15, length(df3))]
+row_odd <- seq_len(nrow(df3_problem3)) %% 2 
+
+
+df3test <- df3_problem3[row_odd == 1, ]
+df3train <- df3_problem3[row_odd == 0, ]
+
+lmp3a = lm(y ~ PercentPopYoung + NumPhysicians + NumHospitalBeds + PercentBelowPov + PercentUnemploy + PerCapitaIncome,  data = df3train)
+summary(lmp3a)
+
+
+res.lm=lmp3a$residuals
+fit.lm=lmp3a$fitted.values
+
+plot(res.lm,fit.lm,xlab="Residuals",ylab="Fitted Values")
+
+par(mfrow = c(2, 2))
+plot(lmp3a)
+
+plots <- gg_resX(lmp3a, plot.all = TRUE)
+
+
+```
+
+It is apparent that there are some outliers which are affecting the regression model. In addition to that, certain pattern cannot be explained in those residual plots.
+
+
+**Answer 3b**
+
+
+```{r P3b,  echo=FALSE, warning=FALSE, message=FALSE}
+
+par(mfrow = c(2, 2))
+plot(lmp3a)
+summary(lmp3a)
+
+
+par(mfrow = c(1, 1))
+stdei<- rstandard(lmp3a)
+str(stdei)
+qqnorm(stdei,ylab="Theoretical Quantiles",xlab="Theoretical Quantiles", main="Normal Q-Q Plot", col = "darkblue") 
+qqline(stdei,col = "red", lwd = 2)
+
+
+
+ols_test_normality(lmp3a)
+
+
+```
+
+
+There are certain serious departure from normality in Q-Q Plot.        
+The normality test results in non-normality.
+
+
+**Answer 3c**
+
+**Scatter Plot for Problem 3 (c) AND Correlation Matrix** *(rounded to nearest 3 decimal places)* **for Problem 3 (c) below**
+
+
+```{r P3c,  echo=TRUE, warning=FALSE, message=FALSE}
+
+pairs(df3train[,-1])
+
+corMatrix <- cor(subset(df3train, select=-c(y)))
+corMatrix
+corMatrix[corMatrix >=.75] <- 'High'
+corMatrix[corMatrix <.75] <- ''
+corMatrix
+
+vif(lmp3a)
+```
+
+The VIF results does not indicate that there is multicollinearity effect.
+
+**Answer 3d**
+
+**Scatter Plot for Problem 3 (d) -  Studentized deleted residuals and a dot plot of these residuals**
+
+
+```{r P3d,  echo=TRUE, warning=FALSE, message=FALSE}
+
+
+ols_plot_resid_stud_fit(lmp3a)
+
+out1 <- outlierTest(lmp3a, cutoff=1)
+out1
+
+```
+
+Yes, according to the plot, the 1st observation and 3rd observation are outliers, which means # 2 and # 6 in the dataset are outliers.
+
+
+
+**Answer 3e**
+
+**Diagonal elements for the HAT matrix**
+
+```{r P3e,  echo=FALSE, warning=FALSE, message=FALSE}
+
+n = nrow(df3train)
+pred = length(lmp3a$coefficients) - 1
+z = 2 * (pred + 1) / n
+hat.lm = hatvalues(lmp3a)
+hat.lm_new = hat.lm[hat.lm> z]
+hat.lm_new
+print(paste("The number of the elements of the HAT Matrix :", length(hat.lm_new)))
+
+```
+
+
+
+**Answer 3f**
+
+**Check for Outliers**
+
+```{r P3f,  echo=FALSE, warning=FALSE, message=FALSE}
+
+n= nrow(df3train)
+k = 2/sqrt(n)
+dffitis2 <- dffits(lmp3a)[which(abs(dffits(lmp3a))>1)]
+print ("The outliers produced by DFFITIS :")
+dffitis2
+
+cooksd2 <- cooks.distance(lmp3a)[which(abs(cooks.distance(lmp3a))>1)]
+print ("The outliers produced by Cooks Distance :") 
+cooksd2
+
+dfbetas2 <- dfbeta(lmp3a)[which(abs(dfbeta(lmp3a))>k)]
+dfbetanumber <- which(abs(dfbeta(lmp3a))>k)
+print ("The outliers produced by DFBETAS :")
+rownames(dfbeta(lmp3a)[dfbetanumber,])
+dfbetas2
+
+```
+
+Here I see that DFFITIS, DFBETAS and Cooks Distance - all of them says 2 and 6 are outliers.
+
