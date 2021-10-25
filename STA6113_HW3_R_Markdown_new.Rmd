@@ -1,0 +1,288 @@
+---
+title: "HW3 R Markdown"
+author: "Santanu Mukherjee"
+date: "10/24/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(data.table)
+```
+
+
+## R Markdown
+### Problem 1
+**Answer 1a**
+
+
+![Problem-1-a](https://github.com/santum4/dataexam/raw/main/STA6113-HW3-Problen-1-A.png)
+
+
+**Answer 1 b and 1 c**
+
+
+![Problem-1-b-c](https://github.com/santum4/dataexam/raw/main/STA6113-HW3-Problen-1-B-C.png)
+
+
+
+
+
+**Answer 1d**
+
+The 95% credible interval for  $\mu$$_{d}$ is 
+
+```{r Problem 1d,  echo=TRUE, warning=FALSE, message=FALSE}
+qnorm(c(0.025, 0.975), -0.0000208127, 0.0000133564)
+
+```
+
+
+
+**Answer 1e**
+
+Here the null hypothesis is  $H_{0}$ : $\mu$$_{d}$ = 0. Now looking at the 95% credible interval of $\mu$$_{d}$, as we can see that the value of $\mu$$_{d}$ = 0 falls in between the 95% credible interval, and so we can say that we FAIL to REJECT $H_{0}$.   
+
+     
+     
+     
+**Answer 2a**
+     
+```{r Problem 2a,  echo=FALSE, warning=FALSE, message=FALSE}
+
+new_method <- c(80,76,70,80,66,85,79,71,81,76)
+std_method <- c(79,73,72,62,76,68,70,86,75,68,73,66)
+n1 <- length(new_method)
+n2 <- length(std_method)
+x1bar <- mean(new_method)
+x2bar <- mean(std_method)
+s1 <- sd(new_method)
+s2 <- sd(std_method)
+diff_mean = x1bar-x2bar
+denom = sqrt((s1*s1/n1) +(s1*s1/n2))
+t <- diff_mean/denom
+```
+
+![Problem-2-a](https://github.com/santum4/dataexam/raw/main/STA6113-HW3-Problen-2-A.png)
+
+
+**Answer 2b **  
+
+Use the Bayesian procedures under the non-informative priors to answer the following questions:
+
+```{r Problem 2b,  echo=FALSE, warning=FALSE, message=FALSE}
+
+M<-100000 # Number of Monte Carlo samples
+set.seed(10)
+phi_new <- rgamma(M,(n1/2),(s1*s1*(n1-1))/2)
+phi_std <- rgamma(M,(n2/2),(s2*s2*(n2-1))/2)
+
+mu_new <- rnorm(M, x1bar,sqrt(1/(n1*phi_new)))
+mu_std <- rnorm(M, x2bar,sqrt(1/(n2*phi_std))) 
+
+```
+
+**Answer 2b i **
+
+
+```{r Problem 2bi,  echo=FALSE, warning=FALSE, message=FALSE}
+# MC approx. of P(mu_new > mu_std|new_method,std_method)
+
+mean_diff <- mean(mu_new>mu_std)
+
+print(paste('P(Test Scores of new method > Test Scores for Standard Method) :', mean_diff ))
+
+```
+
+
+**Answer 2b ii **
+
+Is the variance of the test scores for the new method smaller than that for the standard method ?
+
+```{r Problem 2bii,  echo=FALSE, warning=FALSE, message=FALSE}
+# MC approx. of P(sigma1 > sigma2|new_method,std_method)
+
+sig2new<-1/phi_new
+sig2std<-1/phi_std
+
+sig_diff <- mean(sig2new<sig2std)
+
+print(paste('P(variance of test scores for new method < Variance of test scores for Standard Method) :', sig_diff ))
+
+```
+
+So, the answer is YES
+
+
+
+**Answer 2b iii **
+
+```{r Problem 2biii,  echo=FALSE, warning=FALSE, message=FALSE}
+# Posterior distribution of the coefficient of variation for each group
+
+CVnew <- mu_new/sqrt(sig2new)
+CVstd <- mu_std/sqrt(sig2std)
+
+hist(CVnew, prob = TRUE, xlab = 'CV', ylab = 'p(mu_new/sig2new|new_method)', col = 'lawngreen')
+lines(density(CVnew), lwd = 2, col = 'red')
+
+hist(CVstd, prob = TRUE, xlab = 'CV', ylab = 'p(mu_std/sig2std|std_method)', col = 'skyblue2')
+lines(density(CVstd), lwd = 2, col = 'red')
+
+```
+
+
+**Answer 2b iv **
+
+```{r Problem 2biv,  echo=FALSE, warning=FALSE, message=FALSE, include=TRUE}
+# MC approx. of p(new_method*>std_method*|new_method,std_method)
+
+new_method_s<-rnorm(M, mu_new, sqrt(sig2new))
+std_method_s<-rnorm(M, mu_std, sqrt(sig2std))
+
+pnew <- mean(new_method_s>std_method_s)
+
+print(paste('Probability that a randomly selected learner taught by the new method will have better test scores than a randomly selected learner taught by the standard model is :', pnew ))
+```
+
+
+
+
+
+**Answer 3a**
+
+If $X_{1}$ ~ N($\mu$$_{1}$,$\sigma$$^2_{1}$)  and $X_{2}$ ~ N($\mu$$_{2}$,$\sigma$$^2_{2}$) such that $X_{1}$ and $X_{2}$ are independent, then the distribution of $Y$ = $X_{1}$ + $X_{2}$ is also normally distributed. 
+
+So, $Y$ ~ N($\mu$$_{1}$ + $\mu$$_{2}$, $\sigma$$^2_{1}$ + $\sigma$$^2_{2}$).       
+    
+
+
+
+**Answer 3b**     
+    
+Approach 1 - Using Monte Carlo sampling. Direct Sampling of $X_{1}$ and $X_{2}$.    
+        
+    
+I have taken $X_{1}$ ~ $N(2,1)$ and $X_{1}$ ~ $N(3,1)$. So ,this means $Y$ should be $N(5,2)$, the above histogram validates this as it is centered around $5$ (which is mean of $Y$) and looking at the Empirical Rule, it can be said that the majority of the data lies within $3$$\sqrt{2}$, which means $3$ times standard deviation.     
+According to what I see, the generated distribution (by Monte Carlo method) is very close to the TRUE distribution.
+
+
+```{r Problem 3ba,  echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
+
+M = 100000
+set.seed(10)
+X1 <- rnorm(M,2,1)
+X2 <- rnorm(M,3,1)
+
+Y <- X1 + X2
+
+#min and max Y for plotting
+Min_Y = 5 - 6*sqrt(1+1)
+Max_Y = 5 + 6*sqrt(1+1)
+
+
+Y = X1 + X2
+hist_Y = hist(Y)
+```
+
+
+```{r Problem 3bb,  echo=FALSE, warning=FALSE, message=FALSE}
+
+plot(hist_Y,prob=TRUE , col=rgb(1,0,1,1/4), freq = F,
+     main = "Sum of TWO Independent Normal Random Variables",
+     xlab = "Value",
+     ylab = "Density")
+lines(density(Y), col = rgb(0,0,1,3/5), lwd = 2)
+lines(x = seq.default(from=Min_Y,to=Max_Y,length.out = 10000),
+      y = dnorm(seq.default(from=Min_Y,to=Max_Y,length.out = 10000),
+                mean = 2 + 3,
+                sd = sqrt(1 + 1)),
+      col = 1, lwd = 1)
+legend("topright", 
+       legend = c("MC Approximation", "True Distribution"), 
+       text.col = 0,
+       lwd = 1,
+       col=c(rgb(0,0,1,3/5),1),
+       lty = c(1,1),
+       pch = c(NA,NA))
+legend("topright", 
+       legend = c("MC Approximation", "True Distribution"), 
+       text.col = "black",
+       lwd = 1,
+       col=c(rgb(1,0,1,1/4),1),
+       lty = c(0,0),
+       pch = c(15,NA),
+       bty = "n")
+
+```
+
+
+
+**Answer 3c**    
+   
+Approach 2
+   
+   
+For any specified $y$, we can approximate $P(y)$ by sampling $g$ from N($\mu$$_{1}$,$\sigma$$^2_{1}$) and then calculating the average density of $y − g$ when sampled from N($\mu$$_{2}$,$\sigma$$^2_{2}$). The GREEN line in the plot below has been generated in this manner.    
+Now, for each value of $y$, $100,000$ samples ($x_{1,i}$) were taken from N($\mu$$_{1}$,$\sigma$$^2_{1}$). 
+Then the average density of $y$ − $x_{1,i}$ in N($\mu$$_{2}$,$\sigma$$^2_{2}$) was used to estimate $P(y)$. The result of this (in GREEN) is plotted on top of the previous results tha you see above in part (b).
+
+
+
+
+
+```{r Problem 3c,  echo=FALSE, warning=FALSE, message=FALSE}
+
+M = 100000
+set.seed(10)
+
+y = seq.default(from=Min_Y,to=Max_Y,length.out = 10000)
+
+X1 <- rnorm(M,2,1)
+
+prob.y = rep(0,length(y))
+for (i in 1:length(y)){
+   prob.y[i] = mean(dnorm((y[i]-X1), 3, sqrt(1)))
+}
+
+# plot results
+plot(hist_Y, col=rgb(1,0,1,1/4), freq = F, 
+     main = "Sum of TWO Independent Normal Random Variables",
+     xlab = "Value",
+     ylab = "Density")
+lines(density(Y), col = rgb(0,0,1,3/5), lwd = 2)
+lines(x = seq.default(from=Min_Y,to=Max_Y,length.out = 10000),
+      y = dnorm(seq.default(from=Min_Y,to=Max_Y,length.out = 10000),
+                mean = 2 + 3 ,
+                sd = sqrt(1 + 1 )),
+      col = 1, lwd = 1)
+lines(y,prob.y, col = 3, lwd = 2)
+legend("topright", 
+       legend = c("Part(b) MC Approx",
+                  "Part(c) Approx",
+                  "True Distribution"), 
+       text.col = 0,
+       lwd = 1,
+       col=c(rgb(0,0,1,3/5),4,1),
+       lty = c(1,1,1),
+       pch = c(NA,NA,NA))
+legend("topright", 
+       legend = c("Part(b) MC Approx",
+                  "Part(c) Approx",
+                  "True Distribution"), 
+       text.col = "black",
+       lwd = 1,
+       col=c(rgb(1,0,1,1/4),4,1),
+       lty = c(0,0,0),
+       pch = c(15,NA,NA),
+       bty = "n")
+```
+
+
