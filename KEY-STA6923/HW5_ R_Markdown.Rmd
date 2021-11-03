@@ -1,0 +1,888 @@
+---
+title: "HW5 R Markdown"
+author: "Santanu Mukherjee"
+date: "11/02/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+
+```
+
+## R Markdown
+### Chapter 4 page 168: 
+
+### $\color{red}{\text{Q1}}$
+
+
+Using a little bit of algebra, prove that (4.2) is equivalent to (4.3). In other words, the logistic function representation and logit representation for the logistic regression model are equivalent.      
+
+
+### $\color{blue}{\text{Answer 1}}$
+
+
+So, in (4.2), We have 
+
+$p(X)$ = $e^{{\beta_{0}}+{\beta_{1}}X}$ / $1$ + $e^{{\beta_{0}}+{\beta_{1}}X}$
+
+This implies
+
+$e^{{\beta_{0}}+{\beta_{1}}X}$ $(1 -p(X))$ = $p(X)$
+
+which is equivalent to
+
+
+$p(X)$ / $(1 -p(X))$ = $e^{{\beta_{0}}+{\beta_{1}}X}$     
+
+
+### $\color{red}{\text{Q3}}$
+
+
+This problem relates to the QDA model, in which the observations within each class are drawn from a normal distribution with a class-specific mean vector and a class specific covariance matrix. We consider the simple case where $p=1$; i.e. there is only one feature.     
+Suppose that we have $K$ classes, and that if an observation belongs to the $k$th class then $X$ comes from a one-dimensional normal distribution, $X$ ∼ $N(\mu_{k},\sigma_{k}^2)$. Recall that the density function for the one-dimensional normal distribution is given in (4.11). Prove that in this case, the Bayes’ classifier is *not* linear. Argue that it is in fact quadratic.    
+
+### $\color{blue}{\text{Answer 3}}$
+
+
+So, from (4.11), we get
+
+$f_k(x)$ = $\frac{1}{(\sqrt(2\pi))\sigma_{k}}$ $exp(\frac{-(x-\mu_k)^2}{2\sigma_k^2})$
+
+and, from (4.10), we get according to Bayes Theorem,
+
+$p_k(X)$ = $\frac{\pi_k f_k(x)}{\sum_{l=1}^k\pi_lf_l(x)}$                               (1)       
+
+So, to use the Bayes classifier, we have to find the class ($k$) such that the equation (1) is largest. As the log function is monotone increasing , it means that we can find k for which the below equation is largest
+
+
+$log\pi_k$ $-$ $\frac{1}{2\sigma^2}$$(x-\mu_k)^2$
+
+$=$  $log\pi_k$ $-$  $\frac{1}{2\sigma^2}$$x^2$ $+$ $\frac{\mu_k}{\sigma^2}$$x$ $-$ $\frac{\mu_k^2}{2\sigma^2}$ $-$ $log\sigma_k$
+
+Now, the above equation is not *linear in $x$*. Furthermore I can argue that the highest order of $x$ is 2 , which means it is **quadratic**.
+
+
+### $\color{red}{\text{Q4}}$
+
+
+When the number of features $p$ is large, there tends to be a deterioration in the performance of KNN and other local approaches that perform prediction using only observations that are near the test observation for which a prediction must be made. This phenomenon is known as the *curse of dimensionality*, and it ties into the fact that non-parametric approaches often perform poorly when $p$ is large. We will now investigate this curse.
+
+
+#### $\color{red}{\text{Q4a}}$  
+Suppose that we have a set of observations, each with measurements on $p = 1$ feature, $X$. We assume that X is uniformly (evenly) distributed on $[0,1]$. Associated with each observation is a response value. Suppose that we wish to predict a test observation’s response using only observations that are within $10$% of the range of $X$ closest to that test observation. For instance, in order to predict the response for a test observation with $X = 0.6$, we will use observations in the range $[0.55,0.65]$. On average, what fraction of the available observations will we use to make the prediction?
+
+
+### $\color{blue}{\text{Answer 4 (a)}}$
+
+So, based on the question, we can say that if $X\epsilon[0.05,0.95]$, then we would use the observations that are in the interval $[X−0.05,X+0.05]$ which represents a length of $0.1$ or in other words means within $~10$% of the observations.   
+
+Now, there are couple iof scenarios which is outside of the ranges mentioned above. They are:       
+If $X\epsilon[0,0.05)$, training observations in the range $[0,0.1]$ will be used        
+If $X\epsilon(0.95,1]$, training observations in the range $[0.9,1]$ will be used       
+
+Again, as $X$ is evenly distributed $(0,1)$, these cases will also use $~ 10$% of the observations.
+
+So, across all cases we see that the fraction of the available observations will we use to make the prediction is **10%**.
+
+#### $\color{red}{\text{Q4b}}$   
+Now suppose that we have a set of observations, each with measurements on $p = 2$ features, $X1$ and $X2$. We assume that $(X1,X2)$ are uniformly distributed on $[0,1]×[0,1]$. We wish to predict a test observation’s response using only observations that are within $10$% of the range of $X1$ and within $10$% of the range of $X2$ closest to that test observation. For instance, in order to predict the response for a test observation with $X1 = 0.6$ and $X2 = 0.35$, we will use observations in the range $[0.55,0.65]$ for $X1$ and in the range $[0.3,0.4]$ for $X2$. On average, what fraction of the available observations will we use to make the prediction?
+
+
+### $\color{blue}{\text{Answer 4 (b)}}$
+
+
+This question is the same as part(a), but the difference is that part(a) talked about one dimension , now it is about $2$ dimensions.  
+
+So, here I will apply similar logic like part (a) above and say that $10$% of observations will satisfy the *first criteria*, and $10$% will satisfy the *second criteria*, but the question here is what fraction of the available observations will satisfy **both criteria**.    
+
+Now, we need to assume here that $X1$ and $X2$ are independent, and then we can multiply the probabilities of these two events, and so the fraction of observations that will be available to make the prediction is $0.1^2$ = $0.01$ = $1$%.
+
+
+#### $\color{red}{\text{Q4c}}$  
+Now suppose that we have a set of observations on $p = 100$ features. Again the observations are uniformly distributed on each feature, and again each feature ranges in value from $0 to 1$. We wish to predict a test observation’s response using observations within the $10$% of each feature’s range that is closest to that test observation. What fraction of the available observations will we use to make the prediction?  
+
+
+### $\color{blue}{\text{Answer 4 (c)}}$   
+
+So, based on the logic used in part(b) above, it can be said that the fraction of observations within $10$% of all $p = 100$ that would be used to make a prediction would be $0.1^{100}$. 
+
+
+
+#### $\color{red}{\text{Q4d}}$    
+
+Using your answers to parts (a)-(c), argue that a drawback of $KNN$ when $p$ is large is that there are very few training observations *“near”* any given test observation.
+
+
+### $\color{blue}{\text{Answer 4 (d)}}$   
+
+So, for parts (a)-(c) when we are saying *‘near’*, it means **‘within 10% of the range’**. So, as dimensionality increases, the probability that there will be training observations *‘near’* the test observation $X$ across all $p$ dimensions approaches zero: 
+
+$\displaystyle{\lim_{p \to \infty}}$$(0.1)^p$ = $0$
+
+The meaning of the above equation is that in datasets where $p$ is large, the $K$ nearest neighbors will not be very close in reality, because there would not be any training observations that would be *‘near’* across all $p$ dimensions.
+
+
+#### $\color{red}{\text{Q4e}}$    
+
+Now suppose that we wish to make a prediction for a test observation by creating a $p$-dimensional hypercube centered around the test observation that contains, on average, $10$% of the training observations. For $p = 1, 2, and 100$, what is the length of each side of the hypercube? Comment on your answer. 
+
+*Note: A hypercube is a generalization of a cube to an arbitrary number of dimensions. When $p = 1$, a hypercube is simply a line segment, when $p = 2$ it is a square, and when $p = 100$ it is a $100$-dimensional cube.*
+
+
+
+### $\color{blue}{\text{Answer 4 (e)}}$     
+
+So, here we need to find the length of each side of the hypercube:
+
+For *$p$* = $1$, the length of the line is **$0.1$**
+
+For *$p$* = $2$, the length of the side of the square is **$(0.1)^\frac{1}{2}$**.
+
+For *$p$* = $100$, the length of the side of the hypercube is **$(0.1)^\frac{1}{100}$**.
+
+
+
+
+### $\color{red}{\text{Q6}}$
+
+
+Suppose we collect data for a group of students in a statistics class with variables:
+
+$X1$ = hours studied       
+$X2$ = undergrad GPA      
+$Y$ = receive an A.      
+
+We fit a logistic regression and produce estimated coefficients:
+
+$\hat\beta_0$ = -6     
+$\hat\beta_1$ = 0.05     
+$\hat\beta_2$ = 1     
+
+
+*(a) Estimate the probability that a student who studies for 40h and has an undergrad GPA of 3.5 gets an A in the class.*
+
+### $\color{blue}{\text{Answer 6 (a)}}$
+
+
+Similar to the equation I have used earlier , we can write 
+
+$p(X)$ = $e^{{\hat\beta_{0}}+{\hat\beta_{1}}X_1 +{\hat\beta_{2}}X_2}$ / $1$ + $e^{{\hat\beta_{0}}+{\hat\beta_{1}}X_1 +{\hat\beta_{2}}X_2}$
+
+
+$p(X)$ = $$\frac{e^{{\hat\beta_{0}}+{\hat\beta_{1}}X_1 +{\hat\beta_{2}}X_2}}{1 + e^{{\hat\beta_{0}}+{\hat\beta_{1}}X_1 +{\hat\beta_{2}}X_2}}$$
+
+Now inputting the given values , we get 
+
+
+$p(X)$ = $$\frac{e^{-6 + (0.05)(40) + (1)(3.5)}}{1 + e^{{-6 + (0.05)(40) + (1)(3.5)}}}$$
+
+
+$p(X)$ = $$\frac{e^{-0.5}}{1 + e^{{-0.5}}}$$
+
+
+```{r 6a, echo=TRUE, warning=FALSE, message=FALSE}
+
+p1 <- exp(-0.5)
+p2 <- 1 + p1
+
+p = p1/p2
+print(paste("The probability that a student who studies for 40 hours and has an undergad GPA of 3.5 gets A in class is:",round(p,3)))
+```
+
+
+
+*(b) How many hours would the student in part (a) need to study to have a 50% chance of getting an A in the class?*
+
+### $\color{blue}{\text{Answer 6 (b)}}$
+
+So, using the equation in part (a) above and putting $X_1$ as the variable for "number of hours required" and also putting 0.5 for $p(X)$, we get,
+
+$0.5$ = $$\frac{e^{-6 + (0.05)(X_1) + (1)(3.5)}}{1 + e^{{-6 + (0.05)(X_1) + (1)(3.5)}}}$$
+
+which means 
+
+$0.5$ =  $$\frac{e^{0.05X_1 - 2.5}}{1 + e^{{0.05X_1 -2.5}}}$$ 
+
+which implies 
+
+
+$e^{0.05X_1 - 2.5}$ = $1$
+
+$X_1$ = $\frac{log(1) + 2.5}{0.05}$
+
+```{r 6b, echo=TRUE, warning=FALSE, message=FALSE}
+
+p1 <- log(1)
+p2 <- (p1 +2.5)/0.05
+
+print(paste("The number of hours required for a student to have a 50% chance of getting A in class is:",p2))
+
+```
+
+
+
+
+
+### $\color{red}{\text{Q8}}$
+
+
+Suppose that we take a data set, divide it into equally-sized training and test sets, and then try out two different classification procedures. First we use logistic regression and get an error rate of $20$% on the training data and $30$% on the test data. Next we use $1$-nearest neighbors (i.e. $K$ = 1) and get an average error rate (averaged over both test and training data sets) of $18$%. Based on these results, which method should we prefer to use for classification of new observations? Why?   
+    
+### $\color{blue}{\text{Answer 8}}$
+
+First of all, lets discuss the two different classification methods.
+
+      
+The training error for KNN  as the error that occurs when the training dataset is used.     
+
+So, when we run K nearest neighbor with K = 1, this means that when KNN makes a prediction on an observation, it will look for the single closest observation available in the training data (which will be itself). It will then assign that training observations response value as the prediction for the test observation.
+
+This will always have zero error, irrespective of the dataset or whether classification/regression is being used. 
+
+This means then, if KNN (where K = 1) averages an 18% error across train & test, its training error will be 0, so its test error must be $2$ $*$ $18$% = $36$%, which is worse than the $30$% test error of logistic regression.    
+
+For this reason I would prefer to use logistic regression compared to the K nearest neighbor classifier.
+
+
+So, I would prefer Logistic Regression.  
+
+
+
+
+
+### $\color{red}{\text{Q10}}$
+
+
+This question should be answered using the *“Weekly”* data set, which is part of the **“ISLR”** package. This data is similar in nature to the *“Smarket”* data from this chapter’s lab, except that it contains $1089$ weekly returns for $21$ years, from the beginning of $1990$ to the end of $2010$.
+
+#### $\color{red}{\text{Q10a}}$   
+
+Produce some numerical and graphical summaries of the *“Weekly”* data. Do there appear to be any patterns ?
+
+### $\color{blue}{\text{Answer 10a}}$
+
+```{r 10a, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (a) Weekly Data Summary
+library(ISLR)
+summary(Weekly)
+pairs(Weekly)
+pairs(Weekly[,-9])
+cor(Weekly[, -9])
+attach(Weekly)
+plot(Volume, col="green")
+```
+
+Step by Step Observations:    
+**1.** The *Summary* and subsequently the *pairs *showed that the variable "Direction" was insignificant.    
+**2.** So, then I got the correlation matrix with all variables except **Direction**.   
+**3.** The correlations between the **“lag”** variables and **Today* variable are close to zero.     
+**4.** The correlation between variables **“Year”** and **“Volume”** is the only significant one.     
+**5.** So, I have done plot “Volume”, and I see that is increasing over time.   
+
+
+#### $\color{red}{\text{Q10b}}$   
+
+Use the full data set to perform a logistic regression with *“Direction”* as the response and the five lag variables plus *“Volume”* as predictors. Use the summary function to print the results. Do any of the predictors appear to be statistically significant ? If so, which ones ?
+
+### $\color{blue}{\text{Answer 10b}}$
+
+
+```{r 10b, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (b) Logistic Regression
+
+log.reg <-glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume, data=Weekly,family=binomial)
+summary(log.reg)
+
+```
+
+It seems that “Lag2” is the only predictor which is statistically significant at $\alpha = 0.05$ as its p-value is less than 0.05.
+
+
+#### $\color{red}{\text{Q10c}}$   
+
+Compute the confusion matrix and overall fraction of correct predictions. Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.
+
+### $\color{blue}{\text{Answer 10c}}$
+
+```{r 10c, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (c) Confusion Matrix
+
+prob.log.reg <- predict(log.reg, type = "response")
+pred.log.reg <- rep("Down", length(prob.log.reg))
+pred.log.reg[prob.log.reg > 0.5] <- "Up"
+table(pred.log.reg, Direction)
+
+```
+
+Based on the results of the table above, We may conclude that the percentage of correct predictions (Down * Down & Up *Up) on the training data is $(54+557)/1089$ which is equal to $56.11$%. So, we can say that $43.89$% is the training error rate.     
+
+If we look at the data from another angle , meaning we could also conclude that for the *weeks* when the market goes **Up**, the model is right $92.07$% of the time $(557/(48+557))$.    
+Similarly, for the *weeks* when the market goes **Down**, the model is right only $11.16$% of the time $(54/(54+430))$.
+
+
+
+
+#### $\color{red}{\text{Q10d}}$   
+
+Now fit the logistic regression model using a training data period from $1990$ to $2008$, with $“Lag2”$ as the only predictor. Compute the confusion matrix and the overall fraction of correct predictions for the held out data (that is, the data from $2009 to 2010$).
+
+### $\color{blue}{\text{Answer 10d}}$
+
+```{r 10d1, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (d) Logistic regression with data from 2009-2010 and the only predictor being "Lag2"
+
+train.data <- (Year < 2009)
+Weekly.2009.2010 <- Weekly[!train.data, ]
+Direction.2009.2010 <- Direction[!train.data]
+log.reg.lag2 <- glm(Direction ~ Lag2, data = Weekly, family = binomial, subset = train.data)
+summary(log.reg.lag2)
+
+```
+
+```{r 10d2, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (d) Confusion Matrix 
+
+prob2.log.reg <- predict(log.reg.lag2, Weekly.2009.2010, type = "response")
+pred2.log.reg <- rep("Down", length(prob2.log.reg))
+pred2.log.reg[prob2.log.reg > 0.5] <- "Up"
+table(pred2.log.reg, Direction.2009.2010)
+
+```
+
+Based on the results of the table above, we can conclude that the percentage of correct predictions on the test data is $(9+56)/104$ (Down * Down & Up * Up) which is equal to $62.5$%. So, we can say that $37.5$% is the test error rate.    
+
+If we look at the data from another angle , meaning we could also conclude that for the *weeks* when the market goes **Up**, the model is right $91.80$% of the time $(56/(56+5))$.    
+Similarly, for the *weeks* when the market goes **Down**, the model is right only $20.93$% of the time $(9/(9+34))$.
+
+
+
+#### $\color{red}{\text{Q10e}}$   
+
+Repeat (d) using $LDA$.
+
+### $\color{blue}{\text{Answer 10e}}$
+
+```{r 10e1, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (e) 1st part - Repeating part (d) using LDA
+
+library(MASS)
+fit.lda <- lda(Direction ~ Lag2, data = Weekly, subset = train.data)
+fit.lda
+
+```
+
+```{r 10e2, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (e) 2nd part - Repeating part (d) using LDA
+
+pred.e.lda <- predict(fit.lda, Weekly.2009.2010)
+table(pred.e.lda$class, Direction.2009.2010)
+```
+
+Based on the results, we conclude that the output is exactly the same as part (d), which means in this case, the **Logistic Regression** and **LDA** has yielded the same result. 
+
+
+#### $\color{red}{\text{Q10f}}$   
+
+Repeat (d) using $QDA$.
+
+### $\color{blue}{\text{Answer 10f}}$
+
+```{r 10f1, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (f) 1st part - Repeating part (d) using QDA
+
+library(MASS)
+fit.qda <- qda(Direction ~ Lag2, data = Weekly, subset = train.data)
+fit.qda
+
+```
+
+```{r 10f2, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (f) 2nd part - Repeating part (d) using QDA
+
+pred.f.qda <- predict(fit.qda, Weekly.2009.2010)
+table(pred.f.qda$class, Direction.2009.2010)
+```
+
+
+Based on the results of the table above, we can conclude that the percentage of correct predictions on the test data is $(0+61)/104$ (Down * Down & Up * Up) which is equal to $58.65$%. So, we can say that $41.35$% is the test error rate. 
+
+If we look at the data from another angle , meaning we could also conclude that for the *weeks* when the market goes **Up**, the model is right $100$% of the time $(61/(61+0))$.    
+Similarly, for the *weeks* when the market goes **Down**, the model is right $0$% of the time $(0/(0+43))$.
+
+So, here in $QDA$, the model chooses **Up** the entire time.
+
+
+
+#### $\color{red}{\text{Q10g}}$   
+
+Repeat (d) using $KNN$ with $K = 1$.
+
+### $\color{blue}{\text{Answer 10g}}$
+
+```{r 10g1, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (g) 1st part - Repeating part (d) using KNN with K = 1
+
+library(class)
+train.lag2 <- as.matrix(Lag2[train.data])
+test.lag2 <- as.matrix(Lag2[!train.data])
+train.Direction <- Direction[train.data]
+
+```
+
+```{r 10g2, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (g) 2nd part - Repeating part (d) using KNN with K = 1
+
+set.seed(1)
+pred.g.knn <- knn(train.lag2, test.lag2, train.Direction, k = 1)
+table(pred.g.knn, Direction.2009.2010)
+
+```
+
+Based on the results of the table above, we can conclude that the percentage of correct predictions on the test data is $(21+31)/104$ (Down * Down & Up * Up) which is equal to $50$%. So, we can say that $50$% is the test error rate.    
+
+If we look at the data from another angle , meaning we could also conclude that for the *weeks* when the market goes **Up**, the model is right $50.82$% of the time $(30/(30+31))$.    
+Similarly, for the *weeks* when the market goes **Down**, the model is right only $48.84$% of the time $(21/(21+22))$.
+
+
+
+#### $\color{red}{\text{Q10h}}$   
+
+Which of these methods appears to provide the best results on this data ?
+
+### $\color{blue}{\text{Answer 10h}}$
+
+If we just want to compare the test error rates, we see that $Logistic$ $Regression$ and $LDA$ have the minimum error rates and so are the best, followed by $QDA$ and $KNN$.
+
+
+
+#### $\color{red}{\text{Q10i}}$   
+
+Experiment with different combinations of predictors, including possible transformations and interactions, for each of the methods. Report the variables, method, and associated confusion matrix that appears to provide the best results on the held out data. Note that you should also experiment with values for K in the KNN classifier.
+
+### $\color{blue}{\text{Answer 10i}}$
+
+$Logistic$ $Regression$
+
+```{r 10i11, echo=TRUE, warning=FALSE, message=FALSE}
+##Logistic Regression with predictors Lag2:Lag1
+
+fit.10.11 <- glm(Direction ~ Lag2:Lag1, data = Weekly, family=binomial, subset = train.data)
+prob.10.11 <- predict(fit.10.11, Weekly.2009.2010, type = "response")
+pred.10.11 <- rep("Down", length(prob.10.11))
+pred.10.11[prob.10.11 > 0.5] <- "Up"
+table(pred.10.11, Direction.2009.2010)
+
+```
+
+```{r 10i12, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (g) 2nd part - Repeating part (d) using KNN with K = 1
+
+mean(pred.10.11 == Direction.2009.2010)
+
+```
+
+
+$LDA$
+
+```{r 10i21, echo=TRUE, warning=FALSE, message=FALSE}
+# LDA with Lag2 interaction with Lag1
+
+fit.lda.10.21 <- lda(Direction ~ Lag2:Lag1, data = Weekly, subset = train.data)
+pred.lda.10.21 <- predict(fit.lda.10.21, Weekly.2009.2010)
+mean(pred.lda.10.21$class == Direction.2009.2010)
+```
+
+
+$QDA$
+
+```{r 10i31, echo=TRUE, warning=FALSE, message=FALSE}
+# QDA with sqrt(abs(Lag2))
+
+fit.qda.10.21 <- qda(Direction ~ Lag2 + sqrt(abs(Lag2)), data = Weekly, subset = train.data)
+pred.qda.10.21 <- predict(fit.qda.10.21, Weekly.2009.2010)
+mean(pred.qda.10.21$class == Direction.2009.2010)
+```
+
+$KNN$ $k = 10$
+
+```{r 10i411, echo=TRUE, warning=FALSE, message=FALSE}
+# KNN k =10
+pred.knn.10.41 <- knn(train.lag2, test.lag2, train.Direction, k = 10)
+table(pred.knn.10.41, Direction.2009.2010)
+
+```
+
+```{r 10i412, echo=TRUE, warning=FALSE, message=FALSE}
+mean(pred.knn.10.41 == Direction.2009.2010)
+```
+
+
+$KNN$ $k = 100$
+
+```{r 10i511, echo=TRUE, warning=FALSE, message=FALSE}
+# KNN k =100
+pred.knn.10.51 <- knn(train.lag2, test.lag2, train.Direction, k = 100)
+table(pred.knn.10.51, Direction.2009.2010)
+
+```
+
+```{r 10i512, echo=TRUE, warning=FALSE, message=FALSE}
+mean(pred.knn.10.51 == Direction.2009.2010)
+```
+
+
+After running multiple different combinations, the results show that the original $Logistic$ $Regression$ and $LDA$ have the best performance in terms of test error rates.
+
+
+
+#### $\color{red}{\text{Problem NOT from the text book}}$   
+
+
+
+
+```{r notinthebook, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(RCurl)
+fileURL = "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data"
+BC_data = read.csv(fileURL, header = FALSE, sep = ",")
+names(BC_data)[1] <- 'id_number'
+names(BC_data)[2] <- 'diagnosis'
+names(BC_data)[3] <- 'radius_mean'
+names(BC_data)[4] <- 'texture_mean'
+names(BC_data)[5] <- 'perimeter_mean'
+names(BC_data)[6] <- 'area_mean'
+names(BC_data)[7] <- 'smoothness_mean'
+names(BC_data)[8] <- 'compactness_mean' 
+names(BC_data)[9] <- 'concavity_mean'
+names(BC_data)[10] <- 'concave_points_mean'
+names(BC_data)[11] <- 'symmetry_mean'
+names(BC_data)[12] <- 'fractal_dimension_mean'
+names(BC_data)[13] <- 'radius_se'
+names(BC_data)[14] <- 'texture_se' 
+names(BC_data)[15] <- 'perimeter_se' 
+names(BC_data)[16] <- 'area_se' 
+names(BC_data)[17] <- 'smoothness_se'
+names(BC_data)[18] <- 'compactness_se' 
+names(BC_data)[19] <- 'concavity_se'
+names(BC_data)[20] <- 'concave_points_se'
+names(BC_data)[21] <- 'symmetry_se'
+names(BC_data)[22] <- 'fractal_dimension_se'
+names(BC_data)[23] <- 'radius_worst' 
+names(BC_data)[24] <- 'texture_worst' 
+names(BC_data)[25] <- 'perimeter_worst'
+names(BC_data)[26] <- 'area_worst' 
+names(BC_data)[27] <- 'smoothness_worst' 
+names(BC_data)[28] <- 'compactness_worst' 
+names(BC_data)[29] <- 'concavity_worst'
+names(BC_data)[30] <- 'concave_points_worst' 
+names(BC_data)[31] <- 'symmetry_worst'
+names(BC_data)[32] <- 'fractal_dimension_worst'
+
+BC_data_final <- BC_data[,-c(23:32)]
+
+BC_data_final$id_number <- NULL
+
+BC_data <- BC_data_final
+
+```
+
+
+
+#### $\color{red}{\text{Q 1 a & b }}$   
+
+Do certain exploratory analysis first.
+(a) Check the scatterplots as well as correlations between the predictors. It would be reasonable only to compare those predictors with their own metrics, i.e., means, standard errors, and worst cases.   
+(b) Check whether there are strong multicollinearity effects among the predictors.   
+
+### $\color{blue}{\text{Answer 1 a & b}}$
+
+```{r notinthebook1a, echo=TRUE, warning=FALSE, message=FALSE, eval=TRUE}
+
+BC_data_relation <- (BC_data[,-1])
+
+pairs(BC_data_relation)
+
+round(cor(BC_data_relation),3)
+
+
+```
+
+Yes there is multicollinearity amongst the predictors.
+
+
+#### $\color{red}{\text{Q 2 }}$   
+
+Split data by using the following commands
+library(caret)
+set.seed(12)
+tr.ind = createDataPartition(BC_data$diagnosis, p = 0.7, list = F)
+BC.tr = BC_data[tr.ind,]
+BC.te = BC_data[-tr.ind,]
+
+### $\color{blue}{\text{Answer 2}}$
+
+
+```{r notinthebook2, echo=TRUE, warning=FALSE, message=FALSE, eval=TRUE}
+
+#library(caret)
+set.seed(12)
+
+#tr.ind = createDataPartition(BC_data$diagnosis, p = 0.7, list = F)
+
+tr.ind = sample(seq_len(nrow(BC_data)), 0.7*nrow(BC_data))
+BC.tr = BC_data[tr.ind,]
+BC.te = BC_data[-tr.ind,]
+
+
+```
+
+Actually, I was having issue with the command that Key had provided, and so used *tr.ind = sample(seq_len(nrow(BC_data)), 0.7*nrow(BC_data))* per Key's direction. 
+
+
+#### $\color{red}{\text{Q 3 }}$   
+
+Run a logistic regression model for the data by using the diagnosis column on all the predictors. Report confusion matrices for the test data as well as training data predictions. Display $ROC$ curve for the test data prediction, along with reporting the $AUC$.
+
+
+### $\color{blue}{\text{Answer 3}}$
+
+$Logistic$ $Regression$
+
+```{r notinthebook3, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+## Logistic regression with diagnosis column as response and all other columns as predictors.
+
+library("pROC")
+log.reg.bc <- glm(as.factor(diagnosis)~ ., data = BC.tr, family = binomial)
+summary(log.reg.bc)
+
+test.probs = predict(log.reg.bc, BC.te, type='response')
+test.preds = rep("B", nrow(BC.te))
+test.preds[test.probs > 0.5] = "M"
+table(test.preds, BC.te$diagnosis)
+mean(test.preds == BC.te$diagnosis)
+
+roc.test.log <- roc(response=BC.te$diagnosis, factor(test.probs, ordered = TRUE))
+plot(roc.test.log, col="red", lwd=3, main="ROC curve Logistic Regression")
+auc_test_log<-auc(roc.test.log)
+auc_test_log
+
+print(paste("The AUC for the Logistic Regression is:", round(auc_test_log,3)))
+
+vif(log.reg.bc)
+
+```
+
+There is strong multicollinearity amongst predictors.
+
+
+#### $\color{red}{\text{Q 4 }}$   
+
+Redo part 3. for LDA and QDA, as well as Naive Bayes methods, respectively.
+
+
+### $\color{blue}{\text{Answer 4}}$
+
+$LDA$
+
+```{r notinthebook4l, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+## LDA
+
+library(MASS)
+lda.fit <- lda(diagnosis~., data=BC.tr, family=binomial)
+summary(lda.fit)
+
+test.preds = predict(lda.fit, BC.te)
+table(test.preds$class, BC.te$diagnosis)
+mean(test.preds$class == BC.te$diagnosis)
+
+roc.test.lda <- roc(response=BC.te$diagnosis, factor(test.preds$class, ordered = TRUE))
+plot(roc.test.lda, col="blue", lwd=3, main="ROC curve LDA")
+auc_test_lda<-auc(roc.test.lda)
+
+print(paste("The AUC for the LDA is:", round(auc_test_lda,3)))
+
+
+```
+
+$QDA$
+
+```{r notinthebook4q, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+## QDA
+
+qda.fit <-qda(diagnosis~., data=BC.tr, family=binomial)
+summary(qda.fit)
+
+test.preds = predict(qda.fit, BC.te)
+table(test.preds$class, BC.te$diagnosis)
+mean(test.preds$class == BC.te$diagnosis)
+
+roc.test.qda <- roc(response=BC.te$diagnosis, factor(test.preds$class, ordered = TRUE))
+plot(roc.test.qda, col="green4", lwd=3, main="ROC curve QDA")
+auc_test_qda<-auc(roc.test.qda)
+
+print(paste("The AUC for the QDA is:", round(auc_test_qda,3)))
+
+
+```
+
+
+
+$Naive$ $Bayes$
+
+```{r notinthebook4n, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+## Naive Bayes
+
+library("naivebayes")
+nb.fit = naive_bayes(diagnosis~., data=BC.tr, usekernel = T) 
+
+test.preds = predict(nb.fit, BC.te)
+table(test.preds, BC.te$diagnosis)
+mean(test.preds == BC.te$diagnosis)
+
+roc.test.nb <- roc(response=BC.te$diagnosis, factor(test.preds, ordered = TRUE))
+plot(roc.test.nb, col="magenta1", lwd=3, main="ROC curve NB")
+auc_test_nb<-auc(roc.test.nb)
+
+
+print(paste("The AUC for the Naive Bayes is:", round(auc_test_nb,3)))
+
+
+```
+
+
+#### $\color{red}{\text{Q 5 }}$   
+
+Do part 3. by using the KNN classification method for k=1, and k=7.
+
+
+### $\color{blue}{\text{Answer 5}}$
+
+$KNN$ $k = 1$
+
+```{r notinthebook51, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+## KNN with k = 1
+
+library(ISLR)
+library(class)
+train.knn = as.matrix(BC.tr[, names(BC.tr) != "diagnosis"])
+test.knn  = as.matrix(BC.te[, names(BC.te) != "diagnosis"])
+
+
+knn.fit = knn(train.knn, test.knn, BC.tr$diagnosis, k=1)
+table(knn.fit, BC.te$diagnosis)
+mean(knn.fit == BC.te$diagnosis)
+
+roc.test.knn1 <- roc(response=BC.te$diagnosis, factor(knn.fit, ordered = TRUE))
+plot(roc.test.knn1, col="orange1", lwd=4, main="ROC curve KNN, k=1")
+auc_test_knn1<-auc(roc.test.knn1)
+
+
+print(paste("The AUC for the KNN (with k = 1) is:", round(auc_test_knn1,3)))
+
+
+```
+
+
+$KNN$ $k = 7$
+
+```{r notinthebook57, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+## KNN with k = 1
+
+train.knn = as.matrix(BC.tr[, names(BC.tr) != "diagnosis"])
+test.knn  = as.matrix(BC.te[, names(BC.te) != "diagnosis"])
+
+
+knn.fit7 = knn(train.knn, test.knn, BC.tr$diagnosis, k=7)
+table(knn.fit7, BC.te$diagnosis)
+mean(knn.fit7 == BC.te$diagnosis)
+
+roc.test.knn7 <- roc(response=BC.te$diagnosis, factor(knn.fit7, ordered = TRUE))
+plot(roc.test.knn7, col="deepskyblue2", lwd=4, main="ROC curve KNN, k=7")
+auc_test_knn7<-auc(roc.test.knn7)
+
+
+print(paste("The AUC for the KNN (with k = 7) is:", round(auc_test_knn7,3)))
+
+
+```
+
+
+
+#### $\color{red}{\text{Q 6 }}$   
+
+Since KNN uses Euclidean distances to calculate the *distance*, different predictors may affect each other. Scale all the predictors for the original data, i.e., combined with training and test data. Then split the date by $“tr.ind”$. Redo part **5.** for this scaled data.
+
+
+### $\color{blue}{\text{Answer 6}}$
+
+```{r notinthebook61, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+
+BC_data[, names(BC_data) != "diagnosis"] <- scale(BC_data[, names(BC_data) != "diagnosis"])
+
+BC.tr = BC_data[tr.ind,]
+BC.te = BC_data[-tr.ind,]
+
+## KNN with k = 1
+
+train.knn = as.matrix(BC.tr[, names(BC.tr) != "diagnosis"])
+test.knn  = as.matrix(BC.te[, names(BC.te) != "diagnosis"])
+
+
+knn.fit61 = knn(train.knn, test.knn, BC.tr$diagnosis, k=1)
+table(knn.fit61, BC.te$diagnosis)
+mean(knn.fit61 == BC.te$diagnosis)
+
+roc.test.knn61 <- roc(response=BC.te$diagnosis, factor(knn.fit61, ordered = TRUE))
+plot(roc.test.knn61, col="chocolate4", lwd=4, main="ROC curve Scaled Data KNN, k=1")
+auc_test_knn61<-auc(roc.test.knn61)
+
+
+print(paste("The AUC for the KNN (with k = 1) for scaled data is:", round(auc_test_knn61,3)))
+
+
+```
+
+
+```{r notinthebook67, echo=TRUE, warning=FALSE, message=FALSE, EVAL=TRUE}
+
+## KNN with k = 7
+
+train.knn = as.matrix(BC.tr[, names(BC.tr) != "diagnosis"])
+test.knn  = as.matrix(BC.te[, names(BC.te) != "diagnosis"])
+
+
+knn.fit67 = knn(train.knn, test.knn, BC.tr$diagnosis, k=7)
+table(knn.fit67, BC.te$diagnosis)
+mean(knn.fit67 == BC.te$diagnosis)
+
+roc.test.knn67 <- roc(response=BC.te$diagnosis, factor(knn.fit67, ordered = TRUE))
+plot(roc.test.knn67, col="blue2", lwd=4, main="ROC curve Scaled Data KNN, k=7")
+auc_test_knn67<-auc(roc.test.knn67)
+
+
+print(paste("The AUC for the KNN (with k = 7) for scaled data is:", round(auc_test_knn67,3)))
+
+
+```
+
+
+#### $\color{red}{\text{Q 7 }}$   
+
+Comments all the classification results you’ve done above.
+
+
+### $\color{blue}{\text{Answer 7}}$
+
+So, looking at all the classification results, it can be said that Logistic Regression has a better performance at distinguishing between the positive and negative classes as it has the highest AUC. All the other methods , like LDA, QDA and KNN also have high AUC and are close.
+
+
+
