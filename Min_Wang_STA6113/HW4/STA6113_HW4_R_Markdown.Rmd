@@ -1,0 +1,150 @@
+---
+title: "HW4 R Markdown"
+author: "Santanu Mukherjee"
+date: "11/7/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(data.table)
+```
+
+
+## R Markdown
+
+**Answer 1a**
+
+
+![Answer-1-a](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P1_a.png)
+
+
+**Answer 1 b **
+
+
+![Answer-1-b_1](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P1_b-1.png)
+![Answer-1-b_2](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P1_b-2.png)
+
+
+**Answer 1 c**
+
+
+
+![Answer-1-c](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P1_c.png)
+
+
+
+**Answer 1 d**
+
+
+![Answer-1-d](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P1_d.png)
+
+
+
+**Answer 2 a and 2 b**
+
+![Answer-2-a-b](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P2_a_b.png)
+
+
+
+**Answer 2 c and 2 d**
+
+
+
+![Answer-2-c-d](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P2_c_d.png)
+
+
+
+
+**Answer 2 e**
+
+
+
+![Answer-2-e](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW4/STA6113_HW4_P2_e.png)
+
+
+     
+     
+**Answer 2f**
+
+
+
+```{r Problem 2f1,  echo=FALSE, warning=FALSE, message=FALSE}
+
+library(invgamma)
+library(extraDistr)
+
+y <- (c(514,443,506,306,480,536,386,385,294,334,345,418,410,402,324,440,364,561,350,414,427,483,275,343,296))
+
+#data information 
+n = length(y)
+ybar = mean(y)
+s2 = sd(y)^2
+
+# define number of samples, M and create a space to save the posterior samples of mu and sigma2
+M = 10000
+mu = rep(0,M)
+sigma2 = mu
+
+
+# Assume initial value of mu as ybar and get first sample for sigma2
+set.seed(1)
+mu[1] = ybar
+sigma2[1] = rinvgamma(1, alpha = n/2, beta = ((s2*(n-1)+n*(mu[1]-ybar)^2)/2))
+
+
+# Gibbs sampling method for remaining samples 
+for (i in 2:M){
+  mu[i] = rnorm(1, mean = ybar, sd = sqrt(sigma2[i-1])/n)
+  sigma2[i] = rinvgamma(1, alpha = n/2, beta = (s2*(n-1)+n*(mu[i]-ybar)^2)/2)
+}
+
+
+#Histogram for mu and sigma
+par(mfrow=c(1,2))
+hist(mu) #histogram of mu
+hist(sigma2) #histogram of sigma2
+
+
+par(mfrow=c(2,1))
+#trace.plot
+par(mar=c(1,1,1,1))
+ts.plot(mu)
+ts.plot(sigma2)
+
+
+```
+
+The 95% credible interval for $\mu$ is displayed below :
+
+```{r Problem 2f2,  echo=FALSE, warning=FALSE, message=FALSE}
+
+# 95% Bayesian credible interval of mu based on Gibbs sampling
+
+quantile(mu, c(0.025, 0.975) ) 
+#   2.5%    97.5% 
+
+
+
+```
+
+The 95% credible interval for $\sigma^2$ is displayed below :
+
+```{r Problem 2f3,  echo=FALSE, warning=FALSE, message=FALSE}
+
+# 95% Bayesian credible interval of sigma2 based on Gibbs sampling
+
+quantile(sigma2, c(0.025, 0.975) ) 
+#   2.5%    97.5% 
+
+
+```
+
+
