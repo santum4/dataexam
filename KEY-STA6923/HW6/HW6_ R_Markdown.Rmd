@@ -1,0 +1,690 @@
+---
+title: "HW6 R Markdown"
+author: "Santanu Mukherjee"
+date: "11/21/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+
+```
+
+## R Markdown
+### Chapter 5 page 197: 
+
+### $\color{red}{\text{Q1}}$
+
+Using basic statistical properties of the variance, as well as single variable calculus, derive (5.6). In other words, prove that ${\alpha}$ given by (5.6) does indeed minimize $Var({\alpha}X+(1−{\alpha})Y)$.      
+
+
+### $\color{blue}{\text{Answer 1}}$
+
+
+So, we have 
+
+$Var({\alpha}X+(1−{\alpha})Y)$ = ${\alpha^{2}}$${\sigma_{X}^{2}}$+$(1−{\alpha})^{2}$${\sigma_{Y}^{2}}$+$2{\alpha}(1-{\alpha})$$\sigma_{X}$$\sigma_{Y}$.    
+
+We now take the **First Derivative** of $Var({\alpha}X+(1−{\alpha})Y)$ relative to ${\alpha}$ and we get   
+
+$$\frac{\delta}{\delta\alpha}$$$Var({\alpha}X+(1−{\alpha})Y)$ = $2{\alpha}$${\sigma_{X}^{2}}$ - $2{\sigma_{Y}^{2}}$ + $2{\alpha}$${\sigma_{Y}^{2}}$ + $2{\sigma_{XY}}$ - $4{\alpha}{\sigma_{XY}}$. 
+
+Equating the above expression to $0$ gives us teh following equation:  
+
+$2{\alpha}$${\sigma_{X}^{2}}$ - $2{\sigma_{Y}^{2}}$ + $2{\alpha}$${\sigma_{Y}^{2}}$ + $2{\sigma_{XY}}$ - $4{\alpha}{\sigma_{XY}}$ = $0$,  
+
+which implies
+
+${\alpha}$  = $$\frac{\sigma_{Y}^{2} - \sigma_{XY} }{\sigma_{X}^{2} + \sigma_{Y}^{2}- 2\sigma_{XY}}$$.   
+
+The above is the **derivation** for (5.6).
+
+To provide that this is the **minimum**, we have to prove that the **Second Derivative** is **greater than** $0$.
+
+
+$$\frac{\delta^{2}}{\delta\alpha^{2}}$$$Var({\alpha}X+(1−{\alpha})Y)$ = $2{\sigma_{X}^{2}}$ + $2{\sigma_{Y}^{2}}$ - $4{\sigma_{XY}}$  = 
+$2Var(X-Y)$ , which is $>=0$ as variance is always **positive**. 
+
+
+
+
+### $\color{red}{\text{Q2}}$
+
+We will now derive the probability that a given observation is part of a bootstrap sample. Suppose that we obtain a bootstrap sample from a set of $n$ observations.  
+
+#### $\color{green}{\text{Q2a}}$
+
+What is the probability that the first bootstrap observation is not the $jth$ observation from the original sample ? Justify your answer.  
+
+### $\color{blue}{\text{Answer 2 (a)}}$
+
+$1 - 1/n$
+
+
+
+#### $\color{green}{\text{Q2b}}$
+
+What is the probability that the second bootstrap observation is not the $jth$ observation from the original sample ?  
+
+### $\color{blue}{\text{Answer 2 (b)}}$
+
+$1 - 1/n$
+
+
+
+#### $\color{green}{\text{Q2c}}$
+
+Argue that the probability that the $jth$ observation is not in the bootstrap sample is $(1 - 1/n)^{n}$
+
+### $\color{blue}{\text{Answer 2 (c)}}$
+
+In bootstrapping, we sample with replacement, and so the probability that the $jth$ observation is **NOT** in the bootstrap sample is the product of the probabilities that each bootstrap observation is **NOT** the $jth$ observation from the original sample, which means
+
+($1 - 1/n$) * ($1 - 1/n$) * .......... * ($1 - 1/n$) =  $(1 - 1/n)^{n}$, as these probabilities are **independent**.
+
+
+
+#### $\color{green}{\text{Q2d}}$
+
+When $n=5$, what is the probability that the $jth$ observation is in the bootstrap sample ?
+
+### $\color{blue}{\text{Answer 2 (d)}}$
+
+So, $P$($jth$ $observation$ $in$ $bootstrap$ $sample$) = $(1 - 1/5)^{5}$ = $0.672$
+
+
+
+#### $\color{green}{\text{Q2e}}$
+
+When $n=100$, what is the probability that the $jth$ observation is in the bootstrap sample ?
+
+### $\color{blue}{\text{Answer 2 (e)}}$
+
+So, $P$($jth$ $observation$ $in$ $bootstrap$ $sample$) = $(1 - 1/100)^{100}$ = $0.634$
+
+
+
+#### $\color{green}{\text{Q2f}}$
+
+When $n=10,000$, what is the probability that the $jth$ observation is in the bootstrap sample ?
+
+### $\color{blue}{\text{Answer 2 (f)}}$
+
+So, $P$($jth$ $observation$ $in$ $bootstrap$ $sample$) = $(1 - 1/10,000)^{10,000}$ = $0.632$
+
+
+
+#### $\color{green}{\text{Q2g}}$
+
+Create a plot that displays, for each integer value of $n$ from $1$ $to$ $100,000$, the probability that the $jth$ observation is in the bootstrap sample. Comment on what you observe.
+
+### $\color{blue}{\text{Answer 2 (g)}}$
+
+
+```{r 2g, echo=TRUE, warning=FALSE, message=FALSE}
+
+x <- 1:100000
+plot(x, 1 - (1 - 1/x)^x)
+
+```
+
+
+It might be seen that the plot quickly reaches an asymptotic value of about $0.632$.
+
+
+#### $\color{green}{\text{Q2h}}$
+
+We will now investigate numerically the probability that a bootstrap sample of size $n=100$ contains the $jth$ observation. Here $j=4$. We repeatedly create bootstrap samples, and each time we record whether or not the **fourth** observation is contained in the bootstrap sample.
+
+```{r 2h, echo=TRUE, warning=FALSE, message=FALSE}
+
+store <- rep(NA, 10000)
+for (i in 1:10000) {
+    store[i] <- sum(sample(1:100, rep = TRUE) == 4) > 0
+}
+mean(store)
+
+```
+Comment on the results obtained.
+
+### $\color{blue}{\text{Answer 2 (h)}}$
+
+From calculus, we know that $\lim_{x \to \infty}(1 + x/n )^n$ = $e^x$.   
+Now if we apply the above to our situation here, we get the probability that a bootstrap sample of size $n$ contains the $jth$ observation converges to $1-1/e$ = $0.632$ as $n -> \infty$.
+
+
+### $\color{red}{\text{Q3}}$
+
+We now review $k-fold$ cross-validation.
+
+#### $\color{green}{\text{Q3a}}$
+
+Explain how $k-fold$ cross-validation is implemented.
+
+### $\color{blue}{\text{Answer 3 (a)}}$
+
+The $k-fold$ cross validation is implemented by taking the $n$ observations and randomly splitting it into $k$ non-overlapping groups of length of (approximately) $n/k$. These groups acts as a validation set, and the remainder of length $(n−n/k)$ acts as a training set. The test error is then estimated by averaging the $k$ resulting $MSE$ estimates.
+
+
+#### $\color{green}{\text{Q3b}}$
+
+What are the advantages and disadvantages of $k-fold$ cross-validation relative to:
+
+##### $\color{green}{\text{Q3b i}}$
+
+$i.$ The validation set approach ?
+
+
+### $\color{blue}{\text{Answer 3 (b i)}}$
+
+The validation set approach has two main drawbacks compared to $k-fold$ cross-validation. Firstly, the validation estimate of the test error rate can be highly variable. This is because depending on which observations are included in the training set and which observations are included in the validation set, this is vary significantly.     
+Secondly, only a subset of the observations are used to fit the model. Since statistical methods tend to perform worse when trained on fewer data observations, this suggests that the validation set (contains fewer observations as this is a subset of the entire data set ) error rate may tend to overestimate the test error rate for the model fit on the entire data set.
+
+
+##### $\color{green}{\text{Q3b ii}}$      
+
+ii. **LOOCV ?**
+
+
+### $\color{blue}{\text{Answer 3 (b ii)}}$
+
+
+So, the $LOOCV$ cross-validation approach is a special case of $k-fold$ cross-validation in which $k=n$. This approach has two drawbacks compared to $k-fold$ cross-validation. Firstly, it requires fitting the potentially computationally expensive model $n$ times compared to $k-fold$ cross-validation which requires the model to be fitted only $k$ times. Secondly, the $LOOCV$ cross-validation approach may give approximately unbiased estimates of the test error, since each training set contains $n−1$ observations. However, this approach has higher variance than $k-fold$ cross-validation (since we are averaging the outputs of $n$ fitted models trained on an almost identical set of observations, these outputs are highly correlated, and the mean of highly correlated quantities has higher variance than less correlated ones). So, there is a bias-variance trade-off associated with the choice of $k$ in $k-fold$ cross-validation. Typically using $k=5$ or $k=10$ yield test error rate estimates that suffer neither from excessively high bias nor from very high variance.
+
+
+
+
+### $\color{red}{\text{Q5}}$
+
+In Chapter 4, we used logistic regression to predict the probability of *default* using *income* and *balance* on the **Default** data set. We will now estimate the test error of this logistic regression model using the validation set approach. Do not forget to set a random seed before beginning your analysis.
+
+#### $\color{green}{\text{Q5a}}$
+
+Fit a logistic regression model that uses *income* and *balance* to predict *default*.  
+
+### $\color{blue}{\text{Answer 5 (a)}}$
+
+
+```{r 5a, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(ISLR)
+attach(Default)
+set.seed(1)
+fit.glm.5a <- glm(default ~ income + balance, data = Default, family = "binomial")
+summary(fit.glm.5a)
+
+```
+
+
+##### $\color{green}{\text{Q5b i}}$  
+
+Using the validation set approach, estimate the test error of this model. In order to do this, you must perform the following steps:
+
+i. Split the sample set into a training set and a validation set.
+
+### $\color{blue}{\text{Answer 5 (b i)}}$
+
+
+```{r 5b1, echo=TRUE, warning=FALSE, message=FALSE}
+
+train <- sample(dim(Default)[1], dim(Default)[1] / 2)
+
+```
+
+Randomly selected **50%** of the observations for the training set and **50%** for the test set.
+
+
+##### $\color{green}{\text{Q5b ii}}$  
+
+ii. Fit a multiple logistic regression model using only the training observations.
+
+### $\color{blue}{\text{Answer 5 (b ii)}}$
+
+
+```{r 5b2, echo=TRUE, warning=FALSE, message=FALSE}
+
+fit.glm.5b2 <- glm(default ~ income + balance, data = Default, family = "binomial", subset = train)
+summary(fit.glm.5b2)
+
+```
+
+
+##### $\color{green}{\text{Q5b iii}}$  
+
+iii. Obtain a prediction of default status for each individual in the validation set by computing the posterior probability of default for that individual, and classifying the individual to the **default** category if the posterior probability is greater than $0.5$.
+
+### $\color{blue}{\text{Answer 5 (b iii)}}$
+
+```{r 5b3, echo=TRUE, warning=FALSE, message=FALSE}
+
+probs.5b3 <- predict(fit.glm.5b2, newdata = Default[-train, ], type = "response")
+pred.glm.5b3 <- rep("No", length(probs.5b3))
+pred.glm.5b3[probs.5b3 > 0.5] <- "Yes"
+pred.glm.5b3[1:10]
+
+```
+
+Showing the first 10 entries of the predition set.
+
+##### $\color{green}{\text{Q5b iv}}$  
+
+iv. Compute the validation set error, which is the fraction of the observations in the validation set that are misclassified.
+
+### $\color{blue}{\text{Answer 5 (b iv)}}$
+
+```{r 5b4, echo=TRUE, warning=FALSE, message=FALSE}
+
+test.error = mean(pred.glm.5b3 != Default[-train, ]$default)
+test.errorpercent = test.error * 100
+
+print(paste("The test error percent with the validation set approach is",test.errorpercent))
+
+```
+
+
+##### $\color{green}{\text{Q5c}}$  
+
+Repeat the process in $(b)$ three times, using three different splits of the observations into a training set and a validation set. Comment on the results obtained.
+
+### $\color{blue}{\text{Answer 5 (c)}}$
+
+```{r 5c1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# 1st time Repetition
+
+train <- sample(dim(Default)[1], dim(Default)[1] / 2)
+fit.glm.5c <- glm(default ~ income + balance, data = Default, family = "binomial", subset = train)
+probs.5c <- predict(fit.glm.5c, newdata = Default[-train, ], type = "response")
+pred.glm.5c <- rep("No", length(probs.5c))
+pred.glm.5c[probs.5c > 0.5] <- "Yes"
+mean(pred.glm.5c != Default[-train, ]$default)
+
+```
+
+
+```{r 5c2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# 2nd time Repetition
+
+train <- sample(dim(Default)[1], dim(Default)[1] / 2)
+fit.glm.5c <- glm(default ~ income + balance, data = Default, family = "binomial", subset = train)
+probs.5c <- predict(fit.glm.5c, newdata = Default[-train, ], type = "response")
+pred.glm.5c <- rep("No", length(probs.5c))
+pred.glm.5c[probs.5c > 0.5] <- "Yes"
+mean(pred.glm.5c != Default[-train, ]$default)
+
+```
+
+
+```{r 5c3, echo=TRUE, warning=FALSE, message=FALSE}
+
+# 3rd time Repetition
+
+train <- sample(dim(Default)[1], dim(Default)[1] / 2)
+fit.glm.5c <- glm(default ~ income + balance, data = Default, family = "binomial", subset = train)
+probs.5c <- predict(fit.glm.5c, newdata = Default[-train, ], type = "response")
+pred.glm.5c <- rep("No", length(probs.5c))
+pred.glm.5c[probs.5c > 0.5] <- "Yes"
+mean(pred.glm.5c != Default[-train, ]$default)
+
+```
+
+Our observation is that the validation estimate of the test error rate can vary, depending on the training set data and the validation set data.
+
+
+
+### $\color{red}{\text{Q6}}$
+
+We continue to consider the use of a logistic regression model to predict the probability of **default** using **income** and **balance** on the **Default** data set. In particular, we will now compute estimates for the standard errors of the **income** and **balance** logistic regression coefficients in two different ways : $(1)$ using the bootstrap, and $(2)$ using the standard formula for computing the standard errors in the $glm()$ function. Do not forget to set a random seed before beginning your analysis.  
+
+#### $\color{green}{\text{Q6a}}$
+
+Using the $summary()$ and $glm()$ functions, determine the estimated standard errors for the coefficients associated with **income** and **balance** in a multiple logistic regression model that uses both predictors.  
+
+### $\color{blue}{\text{Answer 6 (a)}}$
+
+```{r 6a, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(1)
+attach(Default)
+fit.glm.6a <- glm(default ~ income + balance, data = Default, family = "binomial")
+summary(fit.glm.6a)
+
+```
+
+The $glm()$ estimated standard errors for the coefficients associated with **income** and **balance** are $4.985e-06$ and $2.274e-04$ respectively. The intercept estimate is $4.348e-01$. 
+
+
+
+#### $\color{green}{\text{Q6b}}$
+
+Write a function, $boot.fn()$, that takes as input the **Default** data set as well as an index of the observations, and that outputs the coefficient estimates for **income** and **balance** in the multiple logistic regression model.
+
+### $\color{blue}{\text{Answer 6 (b)}}$
+
+```{r 6b, echo=TRUE, warning=FALSE, message=FALSE}
+
+boot.fn <- function(df, trainid) {
+
+return(coef(glm(default ~ income + balance, data=df, family=binomial, subset=trainid)))
+
+}
+
+
+```
+
+
+
+#### $\color{green}{\text{Q6c}}$
+
+Use the $boot()$ function together with your $boot.fn()$ function to estimate the standard errors of the logistic regression coefficients for **income** and **balance**.
+
+### $\color{blue}{\text{Answer 6 (c)}}$
+
+```{r 6c, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+boot.fn(Default, 1:nrow(Default))
+
+boot(Default, boot.fn, R=100)
+
+
+```
+
+
+
+#### $\color{green}{\text{Q6d}}$
+
+Comment on the estimated standard errors obtained using the $glm()$ function and using your bootstrap function.
+
+### $\color{blue}{\text{Answer 6 (d)}}$
+
+Based on the output, the estimated standard errors obtained by the two methods are pretty close to each other.
+
+
+### Chapter 6 page 259: 
+
+### $\color{red}{\text{Q2}}$
+
+For parts (a) through (c), indicate which of i. through iv. is correct. Justify your answer.
+
+
+#### $\color{green}{\text{Q2a}}$
+
+The $LASSO$ relative to $Least$ $Squares$, is:
+
+i. More flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.
+
+ii. More flexible and hence will give improved prediction accuracy when its increase in variance is less than its decrease in bias.
+
+iii. Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.
+
+iv. Less flexible and hence will give improved prediction accuracy when its increase in variance is less than its decrease in bias.
+
+### $\color{blue}{\text{Answer 2 (a)}}$
+
+$iii$. Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.
+
+$Reason$ :   Lasso is less flexible (for $\lambda$ > $0$), giving increased prediction accuracy provided that the he increase in bias is outweighed by the decrease in variance.
+
+This is because lasso selects the $\hat{\beta}$ that minimizes $RSS$ + $\lambda$$\sum_{i = 1}^{p}$$|\beta{i}|$, and not just the $RSS$ in least squares.
+
+Since the shrinkage penalty $\lambda$$\sum_{i = 1}^{p}$$|\beta{i}|$ is very small for ${\beta_{1}$,${\beta_{2}}$........${\beta_{p}}$ close to zero, this tends to shrink the estimates towards zero (because for a given  $\lambda$ > $0$, the optimal $LASSO$ $\hat{\beta}$ will be closer to zero than the least squares $\hat{\beta}$). For a larger $\lambda$, the shrinkage terms importance is higher relative to the $RSS$, so the shrinkage increases.
+
+This shrinkage is what reduces the variance of the predictions, at the cost of a small increase in bias.
+
+
+#### $\color{green}{\text{Q2b}}$
+
+Repeat (a) for ridge regression relative to least squares.
+
+
+### $\color{blue}{\text{Answer 2 (b)}}$
+
+$iii$. it is for the same reasons as part $(a)$. Less flexible and hence will give improved prediction accuracy when its increase in bias is less than its decrease in variance.   
+     
+The only real difference here is that the ridge objective function to be minimized $RSS$ + $\lambda$$\sum_{i = 1}^{p}$$\beta{i}^{2}$, where the shrinkage term for ridge regression is a bit different to that of the $LASSO$.
+
+The meaning of the previous statement is that ridge regression won’t shrink coefficients of less-useful variables to exactly $Zero$ (the $LASSO$ can do this), but the rest of the arguments (shrinkage reducing the variance, thus increasing the bias) still applies.
+
+
+#### $\color{green}{\text{Q2c}}$
+
+Repeat (a) for non-linear methods relative to least squares.
+
+
+### $\color{blue}{\text{Answer 2 (c)}}$
+
+$ii$. - More flexible and hence will give improved prediction accuracy when its increase in variance is less than its decrease in bias.
+
+When we are using a non-linear method and have the relationship $Y$ $=$ $f(X)$+ $\epsilon$, we are going to have a more flexible method as we are making less assumptions about the what the functional form of $f$ (by not assuming linearity) is . In this case, where $f$ is better approximated using non-linear relationships between the predictors and the response, this will lead to a decrease in bias that outweighs any increase in variance, and so we will have a higher prediction accuracy.
+
+
+
+
+### $\color{red}{\text{Q3}}$
+
+Suppose we estimate the regression coefficients in a linear regression model by minimizing:
+
+
+$\sum_{i = 1}^{n}$$(y_{i} - \beta_{0} - \sum_{j = 1}^{p}\beta{j}x_{ij})^{2}$     subject to $\sum_{j = 1}^{p}$$|\beta{j}|$ $\le$  $s$
+
+
+for a particular value of $s$. For parts $(a)$ through $(e)$, indicate which of $i.$ through $v.$ is correct. Justify your answer.
+
+
+
+#### $\color{green}{\text{Q3a}}$
+
+As we increase $s$ from $0$, the training $RSS$ will:
+
+i. Increase initially, and then eventually start decreasing in an inverted $U$ shape.
+
+ii. Decrease initially, and then eventually start increasing in a $U$ shape.
+
+iii. Steadily increase.
+
+iv. Steadily decrease.
+
+v. Remain constant.
+
+
+### $\color{blue}{\text{Answer 3 (a)}}$
+
+$iv.$ - Steadily decrease.
+
+Minimizing the $RSS$ (subject to the constraint $\sum_{j = 1}^{p}$$|\beta{j}|$ $\le$  $s$) means $LASSO$, this is the way parameters are selected.
+
+The least squares solution will satisfy the given constraint, once $s$ is sufficiently large. For this particular situation, the $\beta$ that minimizes $RSS$ $=$ $\sum_{i = 1}^{n}$$(y_{i} - \beta_{0} - \sum_{j = 1}^{p}\beta{j}x_{ij})^{2}$ and also satisfies the given constraint will always be the least squares solution. Now until that point, the training $RSS$ will decrease monotonically.
+
+
+
+#### $\color{green}{\text{Q3b}}$
+
+Repeat (a) for test $RSS$.
+
+### $\color{blue}{\text{Answer 3 (b)}}$
+
+$ii$. - decrease initially, and then eventually start increasing in a $U$ shape.
+
+When $s$ = $0$, the only $\hat{\beta}$ that will satisfy $\sum_{j = 1}^{p}$$|\beta{j}|$ $\le$  $s$ will be a vector of zeros, so here we will simply have the null model ($\hat{y}$ = $\overline{y}$). Now, as $s$ increases and the given constraint is loosened, the model's flexibility will increase. So, test $RSS$ will therefore decrease, up to the point where it will start to overfit (and at that point, the test $RSS$ will start increasing again).
+
+#### $\color{green}{\text{Q3c}}$
+
+Repeat (a) for variance.
+
+### $\color{blue}{\text{Answer 3 (c)}}$
+
+
+iii. - Steadily increase.
+
+The reason is that the given constraint region increasing in size ($s$ increasing from zero) corresponds to $\lambda$ decreasing (the shrinkage reduction), so model's flexibility is increasing and so an increase in variance will occur. If $s$ is sufficiently large so that $\hat{\beta}$ falls within the given constraint region, the variance going forward will no longer increase, because the $\hat{\beta}$ chosen will always be the least squares estimate.
+
+
+
+#### $\color{green}{\text{Q3d}}$
+
+Repeat (a) for (squared) bias.
+
+### $\color{blue}{\text{Answer 3 (d)}}$
+
+$iv.$ - Steadily decrease.
+
+The reasoning is the same as part $(c)$ above - increasing the model's flexibility will decrease the bias. Again, this will stop reducing if the least squares solution falls within the given constraint region.
+
+
+#### $\color{green}{\text{Q3e}}$
+
+Repeat (a) for the irreducible error.
+
+### $\color{blue}{\text{Answer 3 (e)}}$
+
+
+$v.$ - Remain constant.
+
+The irreducible error is the error introduced by inherent uncertainty/noise in the system being approximated. It remains constant regardless of model's flexibility, because there may be unmeasured variables not in $X$ that would be required to explain it, or unmeasurable variation in $Y$ that cannot be predicted with the variables in $X$, regardless of how well-specified the model is (so basically, it is completely independent of $s$).
+
+
+
+
+### $\color{red}{\text{Q9}}$
+
+In this exercise, we will predict the number of applications received using the other variables in the **College** data set.
+
+
+#### $\color{green}{\text{Q9a}}$
+
+Split the data set into a training set and a test set.
+
+### $\color{blue}{\text{Answer 9 (a)}}$
+
+Randomly selected **50%** of the observations for the training set and **50%** for the test set.
+
+```{r 9a, echo=TRUE, warning=FALSE, message=FALSE}
+
+college <- College
+attach(college)
+
+set.seed(1)
+split <- sample(1:nrow(college), nrow(college)/2)
+
+train <- college[split,]
+test <- college[-split,]
+
+train_percent  = round(nrow(train) *100 / nrow(college),0)
+test_percent = round(100 - train_percent,0)
+
+print(paste("The training data set percent is ",train_percent))
+
+print(paste("The test data set percent is ",test_percent))
+
+```
+
+
+
+#### $\color{green}{\text{Q9b}}$
+
+Fit a linear model using least squares on the training set, and report the test error obtained.
+
+### $\color{blue}{\text{Answer 9 (b)}}$
+
+
+```{r 9b, echo=TRUE, warning=FALSE, message=FALSE}
+
+lm_model <- lm(Apps ~ ., data = train)
+summary(lm_model)
+
+pred_ols <- predict(lm_model, test)
+ols_mse <- mean((pred_ols - test$Apps)^2)
+
+print(paste("The MSE as the test error metric is ", round(ols_mse,0)))
+
+```
+
+
+
+#### $\color{green}{\text{Q9c}}$
+
+Fit a ridge regression model on the training set, with $\lambda$ chosen by cross-validation. Report the test error obtained.
+
+### $\color{blue}{\text{Answer 9 (c)}}$
+
+I first create *train.matrix* and *test.matrix*, which are train & test datasets.
+
+
+```{r 9c1, echo=TRUE, warning=FALSE, message=FALSE}
+
+train.matrix <- model.matrix(Apps~., data=train)
+test.matrix <- model.matrix(Apps~., data=test)
+grid = 10^seq(5,-2, length=100)
+set.seed(3)
+collegeridge <- cv.glmnet(train.matrix, train$Apps, alpha=0, lambda=grid)
+bestLambda.ridge <- collegeridge$lambda.min
+bestLambda.ridge
+
+```
+
+
+I am here testing varying values of $\lambda$ (from $0.01$ to $100$) using $5-fold$ cross-validation.
+
+
+
+```{r 9c2, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+data.frame(lambda = collegeridge$lambda, 
+           cv_mse = collegeridge$cvm) %>%
+
+  ggplot(aes(x = lambda, y = cv_mse)) + 
+  geom_point() + 
+  geom_line() + 
+  geom_vline(xintercept = collegeridge$lambda.min, col = "deepskyblue3") +
+  geom_hline(yintercept = min(collegeridge$cvm), col = "deepskyblue3") +
+  scale_x_continuous(trans = 'log10', breaks = c(0.01, 0.1, 1, 10, 100), labels = c(0.01, 0.1, 1, 10, 100)) + 
+  scale_y_continuous(labels = scales::comma_format()) + 
+  theme(legend.position = "bottom") + 
+  labs(x = "Lambda", 
+       y = "Cross-Validation MSE", 
+       col = "Non-Zero Coefficients:", 
+       title = "Ridge Regression - Lambda Selection (Using 5-Fold Cross-Validation)")
+
+```
+
+
+
+
+```{r 9c3, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+collegeridge_best <- glmnet(y = train$Apps,
+                           x = train.matrix,
+                           alpha = 0, 
+                           lambda = 10^seq(2,-2, length = 100))
+
+ridge_pred <- predict(collegeridge_best, s = collegeridge$lambda.min, newx = test.matrix)
+ridge_mse <- mean((ridge_pred - test$Apps)^2)
+
+print(paste("The Ridge test MSE is ", round(ridge_mse,0)))
+
+```
+
+
+
+
+
+
