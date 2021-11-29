@@ -1,0 +1,178 @@
+---
+title: "HW5 R Markdown"
+author: "Santanu Mukherjee"
+date: "11/28/2021"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(data.table)
+```
+
+
+## R Markdown
+
+**Answer 1a**
+
+
+![Answer-1-a](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW5/Problem_1a.png)
+
+<P style="page-break-before: always">
+   
+
+**Answer 1 b **
+
+The below table contains the point estimates and 95% equal tailed credible intervals of $\mu_{1}$, $\mu_{2}$, $\sigma_{1}$, $\sigma_{2}$ and $\rho$. 
+
+```{r Problem 1b,  echo=FALSE, warning=FALSE, message=FALSE}
+# Verbal IQ = viq, Performance IQ = piq 
+
+library(MASS)
+library(gt)
+library(CholWishart)
+
+viq =  c(133, 140, 139, 133, 137, 99, 138, 92, 89, 133, 132, 141, 135, 140, 96, 83, 132, 100, 101, 80, 83, 97, 135, 139, 91, 141, 85, 103, 77, 130, 133, 144, 103, 90, 83, 133, 140, 88, 81, 89)
+
+piq = c(
+816932, 1001121, 1038437, 965353, 951545, 928799, 991305, 854258,  904858, 955466,
+833868, 1079549, 924059,  856472, 878897, 865363, 852244, 945088,  808020, 889083,
+892420, 905940,  790619,  955003, 831772, 935494, 798612, 1062462, 793549, 866662,
+857782, 949589,  997925,  879987, 834344, 948066, 949395, 893983,  930016, 935863)
+
+#data information
+data = cbind(viq, piq) # combine data into a vector, so that it becomes two columns
+barY = colMeans(data) # calculate means of each column 
+n = length(viq)
+
+#Samples for covariance matrix
+viq.cov = viq - mean(viq)
+piq.cov = piq - mean(piq)
+cov.viq.piq = rbind(t(viq.cov),t(piq.cov))
+S = cov.viq.piq %*% t(cov.viq.piq)
+set.seed(1)
+M = 10000
+Sigma_sampled = rInvWishart(M,n-1,S)
+
+
+# generate samples for mean
+barY = colMeans(data) # calculate means of each column 
+mu = matrix(0,ncol = 2, nrow = M)
+colnames(mu) = c("Verbal_IQ", "Performance_IQ")
+for (i in 1:M){
+  mu[i,] = mvrnorm(1, barY, Sigma_sampled[,,i]/n)
+}
+
+# point estimate for mu
+mu_point = colMeans(mu)
+mu_point1 = mu_point[1]
+mu_point2 = mu_point[2]
+
+
+# point estimate for Sigma
+Sigma_est = matrix(0,2,2)
+for (i in 1:M){
+  Sigma_est = Sigma_est + Sigma_sampled[,,i]
+}
+Sigma_point = Sigma_est/M
+sigma1_point = sqrt(Sigma_point[1,1])
+sigma2_point = sqrt(Sigma_point[2,2])
+
+# point estimate for rho
+rho_sampled = Sigma_sampled[1,2,]/sqrt(Sigma_sampled[1,1,])/sqrt(Sigma_sampled[2,2,])
+rho_point = mean(rho_sampled)
+
+
+# 95% equal-tailed Bayesian credible interval for mu1, mu2, sigma1, sigma2 and rho
+ci_mu1 = quantile(mu[,"Verbal_IQ"],c(0.025,0.975))
+ci_mu2 = quantile(mu[,"Performance_IQ"],c(0.025,0.975))
+ci_sigma1 = quantile(sqrt(Sigma_sampled[1,1,]),c(0.025,0.975))
+ci_sigma2 = quantile(sqrt(Sigma_sampled[2,2,]),c(0.025,0.975))
+ci_rho = quantile(rho_sampled,c(0.025,0.975))
+
+
+# tabular results for display
+table_1b <- data.frame(ci_mu1,ci_mu2, ci_sigma1, ci_sigma2, ci_rho)
+colnames(table_1b) = c("mu1","mu2", "Sigma1", "Sigma2", "Rho")
+
+col_point <- data.frame(mu_point1, mu_point2, sigma1_point, sigma2_point, rho_point)
+colnames(table_1b) = c("mu1","mu2", "Sigma1", "Sigma2", "Rho")
+colnames(col_point) = c("mu1","mu2", "Sigma1", "Sigma2", "Rho")
+
+table_final_1b <- rbind(col_point,table_1b)
+rownames(table_final_1b) = c("Point Estimates", "95% CI Lower Limit", "95% CI Upper Limit")
+
+table_final_1b
+
+
+```
+
+
+
+**Answer 1 c**
+
+The point estimate for $\rho$ is $0.3525697$ and both the $95$% credible intervals (lower and upper) for $\rho$ did not contain **zero**. So, we can conclude that there is a positive linear correlation between **Verbal IQ** and **Performance IQ** scores.
+
+
+
+<P style="page-break-before: always">
+
+
+
+**Answer 2 a **
+
+![Answer-2-a](https://github.com/santum4/dataexam/raw/main/Min_Wang_STA6113/HW5/Problem_2a.png)
+
+<P style="page-break-before: always">
+
+**Answer 2 b **
+
+The different values of $a$ and $b$ are stored in an array and used to calculate the 95% posterior interval for $p1 - p2$ and also used to calculate posterior probability that $p1 > p2$. The below table provides the results for different values of $a$ and $b$.
+
+```{r Problem 2b1,  echo=FALSE, warning=FALSE, message=FALSE}
+
+# generating samples for p1|n1 and p2|n2, and finding 95% posterior interval for p1-p2 for various values of a and b
+
+#various values of a and b
+a = c(1,2,3,4,5)
+b = c(1,2,3,4,5)
+
+
+# Define matrices for holding confidence interval (C.I.'s) and P(p1>p2)
+p1_ci = matrix(0, nrow = length(a), ncol = 2)
+p2_ci = p1_ci
+p1p2 = rep(0,length(a))
+
+set.seed(1)
+M = 10000 # number of samples
+for (i in 1:length(a)){
+  # sample and get results
+  set.seed(1)
+  p1 = rbeta(M,6+a[i], 4+b)
+  p2 = rbeta(M,10+b[i],10+b)
+  p1_ci[i,] = quantile(p1,c(0.025,0.975))
+  p2_ci[i,] = quantile(p2,c(0.025,0.975))
+  p1p2[i]=mean(p1>p2)
+
+}
+
+
+# tabular Results for display
+
+tab_result_final_2b = data.frame(a,b, (p1_ci[,1] - p2_ci[,1]), (p1_ci[,2] - p2_ci[,2]),p1p2)
+
+colnames(tab_result_final_2b) = c("a","b", "95%_CI_Lower_p1-p2", "95%_CI_Upper_p1-p2", "Prob_p1_GreaterThan_p2")
+
+
+tab_result_final_2b
+
+
+```
+
