@@ -1,0 +1,512 @@
+---
+title: "Final Project R Markdown"
+author: "Kamaniya Chatakondu, Alberic C Kouadio,  Santanu Mukherjee"
+date: "12/06/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(ggthemes)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(corrplot)
+library(ggcorrplot)
+
+
+```
+
+## R Markdown
+
+
+#### $\color{blue}{\text{Final Project - Prediction of probability of death for patients having heart failures}}$   
+
+**The below shows the first few records of the dataset**
+
+```{r downloaddata, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Download and read Heart Failure Clinical records from UCI Machine Learning Repository
+library(RCurl)
+fileURL = "https://archive.ics.uci.edu/ml/machine-learning-databases/00519/heart_failure_clinical_records_dataset.csv"
+
+HF_data = read.csv(fileURL, header = TRUE, sep = ",")
+head(HF_data)
+
+
+```
+
+\pagebreak
+**EDA ( Exploratory Data Analysis - contd) - Correlation Matrix **
+
+
+```{r EDA1, echo=FALSE, warning=FALSE, message=FALSE}
+# For correlation plot
+
+library(RColorBrewer)
+
+myvars <- c("ejection_fraction", "time", "platelets", "diabetes", "smoking", "sex", "creatinine_phosphokinase", "DEATH_EVENT", "serum_creatinine", "age", "anaemia", "high_blood_pressure", "serum_sodium")
+HF_data1 <- HF_data[myvars]
+names(HF_data1) <- c("EF", "time", "platelets", "diabetes", "smoking", "sex", "CPK", "DE", "SE", "age", "anaemia", "HBP", "SS")
+
+r <- cor(HF_data1, use="complete.obs")
+r1 <- round(r,2)
+
+ggcorrplot(r1, 
+           hc.order = TRUE, 
+           method = "square",
+           lab = TRUE)
+
+```
+
+
+\pagebreak
+**EDA ( Exploratory Data Analysis - contd) - Survival percentage and Time (follow up days) **
+
+
+```{r EDA2, echo=FALSE, warning=FALSE, message=FALSE}
+
+#Survival percentage and Time (follow up days)
+
+df <- HF_data[,12:13]
+sumd0 = 0
+sumd1 = 0
+month1 = 0
+month2 = 0
+month3 = 0
+month4 = 0
+month5 = 0
+month6 = 0
+month7 = 0
+month8 = 0
+month9 = 0
+month10 = 0
+month11 = 0
+month12 = 0
+for (i in 1:nrow(df)) {
+  if (df$time[i] < 30) {
+    month1 = month1 + 1
+  } else if ((df$time[i] >= 30) && (df$time[i] < 60)) {
+    month2 = month2 + 1
+  }  else if ((df$time[i] >= 60) && (df$time[i] < 90)) {
+    month3 = month3 + 1
+  }  else if ((df$time[i] >= 90) && (df$time[i] < 120)) {
+    month4 = month4 + 1
+  }  else if ((df$time[i] >= 120) && (df$time[i] < 150)) {
+    month5 = month5 + 1
+  }  else if ((df$time[i] >= 150) && (df$time[i] < 180)) {
+    month6 = month6 + 1
+  }  else if ((df$time[i] >= 180) && (df$time[i] < 210)) {
+    month7 = month7 + 1
+  }  else if ((df$time[i] >= 210) && (df$time[i] < 240)) {
+    month8 = month8 + 1
+  }  else if ((df$time[i] >= 240) && (df$time[i] < 270)) {
+    month9 = month9 + 1
+  }  else if ((df$time[i] >= 270) && (df$time[i] < 300)) {
+    month10 = month10 + 1
+  }  else if ((df$time[i] >= 300) && (df$time[i] < 330)) {
+    month11 = month11 + 1
+  }  else if ((df$time[i] >= 330) && (df$time[i] < 360)) {
+    month12 = month12 + 1
+  }
+}
+
+month <- data.frame(month1,month2, month3,month4,month5,month6,month7,month8,month9,month10,month11,month12)
+#survived <- data.frame(survived1,survived2,survived3,survived4,survived5,survived6,survived7,survived8,survived9,survived10,survived11,survived12)
+#dead <- data.frame(dead1,dead2,dead3,dead4,dead5,dead6,dead7,dead8,dead9,dead10,dead11,dead12)
+
+array_survived <- array(0:0, dim=c(1,12))
+array_dead <- array(0:0, dim=c(1,12))
+survival_percent <- array(0:0, dim=c(1,12))
+
+
+for (i in 1:nrow(df)) {
+  if ((df$time[i] < 30) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[1] = array_survived[1] + 1
+
+  } else if ((df$time[i] < 30) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[1] = array_dead[1] + 1
+  }
+}
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 30) && (df$time[i] < 60) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[2] = array_survived[2] + 1
+  } else if ((df$time[i] >= 30) && (df$time[i] < 60) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[2] = array_dead[2] + 1
+  }
+}
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 60) && (df$time[i] < 90) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[3] = array_survived[3] + 1
+  } else if ((df$time[i] >= 60) && (df$time[i] < 90) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[3] = array_dead[3] + 1
+  }
+}
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 90) && (df$time[i] < 120) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[4] = array_survived[4] + 1
+  } else if ((df$time[i] >= 90) && (df$time[i] < 120) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[4] = array_dead[4] + 1
+  }
+}
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 120) && (df$time[i] < 150) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[5] = array_survived[5] + 1
+  } else if ((df$time[i] >= 120) && (df$time[i] < 150) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[5] = array_dead[5] + 1
+  }
+}
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 150) && (df$time[i] < 180) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[6] = array_survived[6] + 1
+  } else if ((df$time[i] >= 150) && (df$time[i] < 180) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[6] = array_dead[6] + 1
+  }
+}
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 180) && (df$time[i] < 210) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[7] = array_survived[7] + 1
+  } else if ((df$time[i] >= 180) && (df$time[i] < 210) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[7] = array_dead[7] + 1
+  }
+}
+
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 210) && (df$time[i] < 240) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[8] = array_survived[8] + 1
+  } else if ((df$time[i] >= 210) && (df$time[i] < 240) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[8] = array_dead[8] + 1
+  }
+}
+
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 240) && (df$time[i] < 270) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[9] = array_survived[9] + 1
+  } else if ((df$time[i] >= 240) && (df$time[i] < 270) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[9] = array_dead[9] + 1
+  }
+}
+
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 270) && (df$time[i] < 300) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[10] = array_survived[10] + 1
+  } else if ((df$time[i] >= 270) && (df$time[i] < 300) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[10] = array_dead[10] + 1
+  }
+}
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 300) && (df$time[i] < 330) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[11] = array_survived[11] + 1
+  } else if ((df$time[i] >= 300) && (df$time[i] < 330) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[11] = array_dead[11] + 1
+  }
+}
+
+
+for (i in 1:nrow(df)) {  
+  if ((df$time[i] >= 330) && (df$time[i] < 360) && (df$DEATH_EVENT[i] == 0)) {
+    array_survived[12] = array_survived[12] + 1
+  } else if ((df$time[i] >= 330) && (df$time[i] < 360) && (df$DEATH_EVENT[i] == 1)) {
+    array_dead[12] = array_dead[12] + 1
+  }
+}
+
+
+
+
+for (i in 1:ncol(array_survived)) {  
+    survival_percent[i] = array_survived[i] / (array_dead[i] + array_survived[i])
+    i = i + 1
+}
+
+
+df.survival <- as.data.frame(survival_percent[,1:10])
+#str(df.survival)
+
+names(df.survival)[1] <- c("survival_percent")
+df.month <- as.data.frame(t(month))
+df.month <- df.month[1:10,]
+
+df.month_num_array <- c(1,2,3,4,5,6,7,8,9,10)
+df.month_num <- data.frame(df.month_num_array)
+
+#str(df.month_num)
+
+survival_rate_month = cbind(df.month_num,df.survival)
+#str(survival_rate_month)
+
+survival_rate <- df.survival$survival_percent
+
+barplot(survival_rate, main="Survival Percentage by month", names=c(1,2,3,4,5,6,7,8,9,10),
+   xlab="Month",  ylab="Survival Percent", col = "skyblue")
+
+
+```
+
+\pagebreak
+**EDA ( Exploratory Data Analysis - contd) - Correlation Plots **
+
+```{r EDA3, echo=FALSE, warning=FALSE, message=FALSE}
+# For correlation plot
+
+
+#plot for serum creatinine, ejection fraction, death event, diabetes
+
+HF_data %>% 
+  mutate(diabetes = ifelse(diabetes %in% 0, "NO Diabetes", "Diabetes")) %>% 
+  ggplot(aes(x = serum_creatinine, y = ejection_fraction, color=diabetes)) +
+  geom_point() +
+  facet_grid(DEATH_EVENT ~ diabetes)+ 
+  labs(x="serum_creatinine" , caption ="0=alive 1=death", y="ejection_fraction")
+
+
+
+#plot for serum creatinine, ejection fraction, death event, high blood pressure
+
+HF_data %>% 
+  mutate(high_blood_pressure = ifelse(high_blood_pressure %in% 0, "NO HBP", "BP")) %>% 
+  ggplot(aes(x = serum_creatinine, y = ejection_fraction, color=high_blood_pressure)) +
+  geom_point() +
+  facet_grid(DEATH_EVENT ~ high_blood_pressure)+ 
+  labs(x="serum_creatinine" , caption ="0=alive 1=death", y="ejection_fraction")
+
+
+#Plot for Age, platelets, Sex and death event
+
+HF_data %>% 
+  mutate(sex = ifelse(sex %in% 0, "Female", "Male")) %>% 
+  ggplot(aes(x = age, y = platelets, color=sex)) +
+  geom_point(alpha=0.5, size=2) +
+  facet_grid(DEATH_EVENT ~ sex)+ 
+  labs(x="Age" , caption ="0=alive 1=death", y="Platelets")
+
+
+
+
+
+
+```
+
+\pagebreak
+**Logistic Regression model with all predictors & Prediction Result for this model **
+
+
+```{r Class1, echo=FALSE, warning=FALSE, message=FALSE}
+
+#Partition data - train(80%) & test (20%) by using the sample function
+
+set.seed(1234)
+indexset=sample(2,nrow(HF_data), replace=T, prob=c(0.8,0.2))
+train=HF_data[indexset==1,]
+test=HF_data[indexset==2,]
+
+# Logistic regression model
+LogMod=glm(DEATH_EVENT~.,train, family='binomial')  
+summary(LogMod)
+
+# Prediction based on the model with all the parameters with res_test > 0.5
+
+res_test<-predict(LogMod, test, type='response')
+#res_test
+
+sum(diag(table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.5)))/(sum(table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.5)))
+
+
+```
+**The data above shows the prediction accuracy in case of Logistic Regression with the original model with all predictors is 80.7%.**
+
+\pagebreak
+
+**To find the VIF for the original model with all predictors.**
+
+```{r Class1a, echo=TRUE, warning=FALSE, message=FALSE}
+
+#VIF (Variance Inflation Factor) with original model with all predictors
+
+vif(LogMod)
+
+```
+
+**The data above shows that the $VIF$ for the original model with all predictors is also less than 2.5**
+
+
+\pagebreak
+**Using stepAIC, find the optimized model**
+
+```{r Class1b, echo=FALSE, warning=FALSE, message=FALSE}
+
+# improve the model with stepAIC
+
+library(MASS)
+LogMod2=stepAIC(LogMod)
+summary(LogMod2)
+
+```
+
+
+
+
+In R, $stepAIC$ is one of the most commonly used search method for feature selection. We try to keep on minimizing the $stepAIC$ value to come up with the final set of features.$stepAIC$ does not necessarily mean to improve the model performance, however, it is used to simplify the model without impacting much on the performance. So $AIC$ quantifies the amount of information loss due to this simplification. $AIC$ stands for **Akaike Information Criteria**.
+
+$AIC$ is only a relative measure among multiple models. $AIC$ is similar adjusted R-squared as it also penalizes for adding more variables to the model. The absolute value of $AIC$ does not have any significance. We only compare $AIC$ value whether it is increasing or decreasing by adding more variables. Also in case of multiple models, the one which has lower $AIC$ value is preferred. $stepAIC$ also removes the multicollinearity (if it exists), from the model.
+
+
+```{r Class2, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Prediction based on the selected model
+
+res_train<-predict(LogMod2, train, type='response')
+res_train
+
+table(Actuals=train$DEATH_EVENT, Predictions=res_train>0.5)
+
+# Prediction Accuracy with Training Data
+sum(diag(table(Actuals=train$DEATH_EVENT, Predictions=res_train>0.5)))/(sum(table(Actuals=train$DEATH_EVENT, Predictions=res_train>0.5)))
+
+
+res_test<-predict(LogMod2, test, type='response')
+res_test
+
+
+table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.5)
+
+summary(LogMod2)
+# Prediction Accuracy with Test Data with res_test > 0.5
+sum(diag(table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.5)))/(sum(table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.5)))
+
+
+
+```
+
+**The prediction accuracy in case of Logistic Regression with the selected model (res_test > 0.5) is 86.5%.**
+
+
+```{r Class3, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Prediction Accuracy with Test Data with res_test > 0.3
+sum(diag(table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.3)))/(sum(table(Actuals=test$DEATH_EVENT, Predictions=res_test>0.3)))
+
+```
+**When we reduce the res_test probability to res_test > 0.3,  the prediction accuracy is $73$%, which is lesser than than the one when the res_test probability res_test > 0.5 **. 
+
+\pagebreak
+**ROC plot** 
+
+```{r Class4, echo=FALSE, warning=FALSE, message=FALSE}
+
+# find the threshold
+# the ROC basically will help us to find if a given model has a good accuracy
+
+library(ROCR)
+ROC_Pred<-prediction(res_test,test$DEATH_EVENT)
+ROC_Perf=performance(ROC_Pred, 'tpr','fpr')
+
+#plotting the ROC Graph
+plot(ROC_Perf,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+
+
+```
+
+
+So, as we can see here, we want the $TPR (True Positive Rate)$  highest as possible and $FPR (False Postive Rate)$ lowest as possible because the false positive rate is a misclassification. If we decrease the threshold, the $FPR$ increases with is not desirable. so, for our model we keep the threshold to be >0.5 to have the best prediction accuracy.
+
+**Finding out AUC (Area Under the Curve)** 
+
+```{r Class5, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Find the AUC
+
+ROC_Perf_1=performance(ROC_Pred, "auc")
+ROC_Perf_1@y.values
+
+
+```
+
+What we want to find is the area under the curve that basically shows that the more area under this curve the better the accuracy of the model is. The ideal value is going to be obviously **1**. To find the area under this curve we must run the $ROC$ performance. In our case the $AUC$ value is **0.80** which is very good value. So the model looks good.
+
+
+\pagebreak
+**LDA classification** 
+
+```{r LDA1, echo=FALSE, warning=FALSE, message=FALSE}
+##LDA 
+
+
+library(MASS)
+fit.lda <- lda(DEATH_EVENT ~ ., data = train)
+fit.lda
+pred.e.lda <- predict(fit.lda, test)
+table(pred.e.lda$class, test$DEATH_EVENT)
+
+```
+
+**Prediction Accuracy in LDA = $(31+9) / (31+7+5+9)$ = $76.9$% , Error = $(7+5) / (31+7+5+9)$ = $23.1$%**
+
+
+\pagebreak
+**QDA classification** 
+
+```{r QDA1, echo=FALSE, warning=FALSE, message=FALSE}
+## QDA
+
+library(MASS)
+fit.qda <- qda(DEATH_EVENT ~ ., data = train)
+fit.qda
+pred.e.qda <- predict(fit.qda, test)
+table(pred.e.qda$class, test$DEATH_EVENT)
+
+```
+**Prediction Accuracy in QDA = $(35+6) / (35+8+3+6)$ = $78.8$% , Error = $(8+3) / (35+8+3+6)$ = $21.2$%**
+
+\pagebreak
+
+**KNN classification** 
+
+```{r KNN1, echo=FALSE, warning=FALSE, message=FALSE}
+## KNN
+
+#data_norm<-function(x) { ((x-min(x))/(max(x)-min(x)))}
+HF_norm<-as.data.frame(scale(HF_data[,]))
+head(HF_norm)
+
+set.seed(1234)
+indexset_norm=sample(2,nrow(HF_norm), replace=T, prob=c(0.8,0.2))
+train_norm=HF_norm[indexset_norm==1,]
+test_norm=HF_norm[indexset_norm==2,]
+library(class)
+k=round(sqrt(nrow(train)))
+HF_norm_KNN_pred<-knn(train_norm, test_norm,cl=train$DEATH_EVENT,
+             k=round(sqrt(nrow(train))))
+table(HF_norm_KNN_pred, test$DEATH_EVENT)
+
+
+```
+
+**Prediction Accuracy in $KNN (k=16)$ = $(38+12) / (38+12+0+2)$ = $96$% , Error = $(2+0) / (38+12+0+2)$ = $4$%**
+
+
+
+
+###########################
