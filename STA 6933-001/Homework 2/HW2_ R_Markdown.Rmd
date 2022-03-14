@@ -1,0 +1,631 @@
+---
+title: "HW2 R Markdown"
+author: "Santanu Mukherjee"
+date: "03/13/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(MASS)
+library(splines)
+library(gam)
+
+```
+
+## R Markdown
+
+
+### Chapter 7 - Book - An Introduction to Statistical Learning - 7.1 - Exercises page 297: 
+
+### $\color{red}{\text{Q7.1}}$
+
+It was mentioned in the chapter that a cubic regression spline with one knot at $ξ$ can be obtained using a basis of the form $x$, $x^2$, $x^3$, $(x − ξ)^3$+, where $(x − ξ)^3_{+}$ = $(x − ξ)^3$ if x > $ξ$ and equals $0$ otherwise.
+
+We will now show that a function of the form  
+
+$f(x)$ = $β_{0}$ + $β_{1}x$ + $β_{2}x^2$ + $β_{3}x^3$ + $β_{4}(x − ξ)^3_{+}$
+
+is indeed a cubic regression spline, regardless of the values of $β_{0}$,$β_{1}$,$β_{2}$,$β_{3}$,$β_{4}$.
+
+
+#### $\color{green}{\text{Q7.1a}}$
+
+
+Find a cubic polynomial
+
+$f_{1}(x)$ = $a_{1}$ + $b_{1}x$ + $c_{1}x^2$ + $d_{1}x^3$
+
+such that $f(x)$ = $f_{1}(x)$ for all $x ≤ ξ$. Express $a_{1}$, $b_{1}$, $c_{1}$, $d_{1}$ in terms of $β_{0}$,$β_{1}$,$β_{2}$,$β_{3}$,$β_{4}$.
+
+
+### $\color{blue}{\text{Answer 7.1 (a)}}$
+
+As we are given that 
+$(x − ξ)^3_{+}$ = $(x − ξ)^3$ if x > $ξ$ and equals $0$ otherwise.
+
+So, in this question for $x ≤ ξ$, we have $f(x)$ = $β_{0}$ + $β_{1}x$ + $β_{2}x^2$ + $β_{3}x^3$, because $(x − ξ)^3_{+}$ $=$ $0$ 
+
+Also in this question it is given that $f(x)$ = $f_{1}(x)$
+
+so if we equate the corresponding coefficients of $f(x)$ $and$ $f_{1}(x)$
+
+we get $a_{1}$= $β_{0}$, $b_{1}$= $β_{1}$, $c_{1}$= $β_{2}$ and $d_{1}$= $β_{3}$.    
+
+   
+
+
+
+
+#### $\color{green}{\text{Q7.1b}}$
+
+Find a cubic polynomial
+
+$f_{2}(x)$ = $a_{2}$ + $b_{2}x$ + $c_{2}x^2$ + $d_{2}x^3$
+
+such that $f(x)$ = $f_{2}(x)$ for all $x > ξ$. Express $a_{2}$, $b_{2}$, $c_{2}$, $d_{2}$ in terms of $β_{0}$,$β_{1}$,$β_{2}$,$β_{3}$,$β_{4}$.
+
+We have now established that $f(x)$ is a piece wise polynomial.
+
+### $\color{blue}{\text{Answer 7.1 (b)}}$
+
+
+For $x > ξ$, we have
+
+$f(x)$ = $β_{0}$ + $β_{1}x$ + $β_{2}x^2$ + $β_{3}x^3$ + $β_{4}(x − ξ)^3_{+}$, which means   
+
+$f(x)$ = $(β_{0} - β_{4}ξ^3)$ + $(β_{1} + 3ξ^2β_{4})$$x$  +  $(β_{2} - 3β_{4}ξ)$$x^2$  +  $(β_{3} + β_{4})$$x^3$.
+
+Given that $f_{2}(x)$ = $a_{2}$ + $b_{2}x$ + $c_{2}x^2$ + $d_{2}x^3$
+
+Also in this question it is given that $f(x)$ = $f_{2}(x)$
+
+so if we equate the corresponding coefficients of $f(x)$ $and$ $f_{2}(x)$
+
+we get $a_{2}$= $β_{0} - β_{4}ξ^3$, $b_{2}$= $β_{1} + 3ξ^2β_{4}$, $c_{2}$= $β_{2} - 3β_{4}ξ$ and $d_{2}$= $β_{3} + β_{4}$. 
+
+
+
+
+#### $\color{green}{\text{Q7.1c}}$
+
+Show that $f_{1}(ξ)$ = $f_{2}(ξ)$. That is, $f(x)$ is continuous at $ξ$.
+
+### $\color{blue}{\text{Answer 7.1 (c)}}$
+
+So, from the above information we can say that 
+
+$f_{1}(ξ)$ = $β_{0}$ + $β_{1}ξ$ + $β_{2}ξ^2$ + $β_{3}ξ^3$
+
+and
+
+$f_{2}(ξ)$ = $(β_{0} - β_{4}ξ^3)$ + $(β_{1} + 3ξ^2β_{4})$$ξ$  +  $(β_{2} - 3β_{4}ξ)$$ξ^2$  +  $(β_{3} + β_{4})$$ξ^3$, which in turn gives  
+
+$f_{2}(ξ)$ = $β_{0}$ + $β_{1}ξ$ + $β_{2}ξ^2$ + $β_{3}ξ^3$
+
+
+So, from the above we can see that $f_{1}(ξ)$ = $f_{2}(ξ)$, which means $f(x)$ is continuous at $ξ$.
+
+
+
+
+#### $\color{green}{\text{Q7.1d}}$
+
+Show that $f_{1}^/(ξ)$ = $f_{2}^/(ξ)$. That is, $f^/(x)$ is continuous at $ξ$.
+
+### $\color{blue}{\text{Answer 7.1 (d)}}$
+
+
+So, from the above, after taking the first derivative , we get 
+
+$f^/_{1}(ξ)$ = $β_{1}$ + $2β_{2}ξ$ + $3β_{3}ξ^2$
+
+and
+
+$f^/_{2}(ξ)$ = $β_{1}$ + $3ξ^2β_{4}$  + $2(β_{2} - 3β_{4}ξ)ξ$  +  $3(β_{3} + β_{4})ξ^2$, which in turn gives
+
+$f^/_{2}(ξ)$ = $β_{1}$ + $2β_{2}ξ$ + $3β_{3}ξ^2$
+
+
+So, from the above we can see that $f^/_{1}(ξ)$ = $f^/_{2}(ξ)$, which means $f^/(x)$ is continuous at $ξ$.
+
+
+
+
+#### $\color{green}{\text{Q7.1e}}$
+
+Show that $f_{1}^{//}(ξ)$ = $f_{2}^{//}(ξ)$. That is, $f^{//}(x)$ is continuous at $ξ$.
+
+### $\color{blue}{\text{Answer 7.1 (e)}}$
+
+
+So, from the above, after taking the second derivative , we get 
+
+$f^{//}_{1}(ξ)$ = $2β_{2}$ + $6β_{3}ξ$
+
+and
+
+$f^{//}_{2}(ξ)$ = $2(β_{2} - 3β_{4}ξ)$  +  $6(β_{3} + β_{4})ξ$, which in turn gives
+
+$f^{//}_{2}(ξ)$ = $2β_{2}$ + $6β_{3}ξ$
+
+
+So, from the above we can see that $f^{//}_{1}(ξ)$ = $f^{//}_{2}(ξ)$, which means $f^{//}(x)$ is continuous at $ξ$.  
+
+   
+
+   
+Therefore, $f(x)$ is truly a cubic spline.
+
+
+
+
+
+
+### $\color{red}{\text{Q7.4}}$
+
+Suppose we fit a curve with basis functions 
+
+$b_{1}(X)$ = $I(0 ≤ X ≤ 2)$ − $(X −1)I(1 ≤ X ≤ 2)$,    
+$b_{2}(X)$ = $(X −3)I(3 ≤ X ≤ 4)$ + $I(4 < X ≤ 5)$.
+
+We fit the linear regression model
+
+$Y$ = $β_{0}$ + $β_{1}b_{1}(x)$ + $β_{2}b_{2}(x)$ + $ϵ$,
+
+and obtain coefficient estimates $\hat{β}_{0}$ = $1$, $\hat{β}_{1}$ = $1$, $\hat{β}_{2}$ = $3$. Sketch the estimated curve between $X = −2$ and $X = 2$. Note the intercepts, slopes, and other relevant information.
+
+
+### $\color{blue}{\text{Answer 7.4 }}$
+
+
+```{r 7-4, echo=TRUE, warning=FALSE, message=FALSE}
+
+x = -2:2
+y = c(1 + 0 + 0, # x = -2
+      1 + 0 + 0, # x = -1
+      1 + 1 + 0, # x = 0
+      1 + (1-0) + 0, # x = 1
+      1 + (1-1) + 0 # x =2
+      )
+plot(x,y)
+
+
+```
+
+
+The curve is constant between $−2$ and $0$ :$y = 1$, constant between $0$ and $1$ : $y = 2$, and linear between $1$ and $2$ : $y = 3−x$.
+
+
+
+
+
+
+### $\color{red}{\text{Q7.6}}$
+
+
+In this exercise, you will further analyze the Wage data set considered throughout this chapter.
+
+
+#### $\color{green}{\text{Q7.6a}}$
+
+Perform polynomial regression to predict **wage** using **age**. Use cross-validation to select the optimal degree d for the polynomial.
+What degree was chosen, and how does this compare to the results of hypothesis testing using $ANOVA$ ? Make a plot of the resulting polynomial fit to the data.
+
+
+### $\color{blue}{\text{Answer 7.6 (a)}}$
+
+So, here I will perform K-fold cross-validation with $K=10$.
+
+
+```{r 7-6a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(1)
+cv.error <- rep(NA, 10)
+for (i in 1:10) {
+    fit <- glm(wage ~ poly(age, i), data = Wage)
+    cv.error[i] <- cv.glm(Wage, fit, K = 10)$delta[1]
+}
+d1 <- which.min(cv.error)
+x <- 1:10
+plot(x, cv.error, type = "b", xlab = "Degree of polynomial", ylab = "CV estimate of the prediction error", 
+     col=ifelse(x==d1, "red", "black"),  pch=ifelse(x==d1, 19, 1))
+
+```
+
+Here, We see that $d=9$ is the optimal degree for the polynomial. We now use $ANOVA$ to test the null hypothesis that a model $M1$ is sufficient to explain the data against the alternative hypothesis that a more complex $M2$ is required
+
+
+```{r 7-6a2, echo=TRUE, warning=FALSE, message=FALSE}
+
+fit761 <- lm(wage ~ age, data = Wage)
+fit762 <- lm(wage ~ poly(age, 2), data = Wage)
+fit763 <- lm(wage ~ poly(age, 3), data = Wage)
+fit764 <- lm(wage ~ poly(age, 4), data = Wage)
+fit765 <- lm(wage ~ poly(age, 5), data = Wage)
+
+anova(fit761, fit762, fit763, fit764, fit765)
+
+
+```
+By looking at the p-value, we see that the square or cubic polynomial appears to be a reasonable fit for the data, but other than these , any other lower or higher models are not justified. Below is the corresponding graph.
+
+
+
+
+```{r 7-6a3, echo=TRUE, warning=FALSE, message=FALSE}
+
+plot(wage ~ age, data = Wage, col = "darkgreen")
+agelims <- range(Wage$age)
+age.grid <- seq(from = agelims[1], to = agelims[2])
+fit <- lm(wage ~ poly(age, 2), data = Wage)
+preds <- predict(fit, newdata = list(age = age.grid))
+lines(age.grid, preds, col = "red", lwd = 2)
+
+```
+
+
+
+
+#### $\color{green}{\text{Q7.6b}}$
+
+Fit a step function to predict **wage** using **age**, and perform cross-validation to choose the optimal number of cuts. Make a plot of the fit obtained.
+
+
+### $\color{blue}{\text{Answer 7.6 (b)}}$
+
+
+Similar to (a) above, here I will perform K-fold cross-validation with $K=10$.
+
+
+```{r 7-6b1, echo=TRUE, warning=FALSE, message=FALSE}
+
+crossv <- rep(NA, 10)
+for (i in 2:10) {
+    Wage$age.cut <- cut(Wage$age, i)
+    fit <- glm(wage ~ age.cut, data = Wage)
+    crossv[i] <- cv.glm(Wage, fit, K = 10)$delta[1]
+}
+d2 <- which.min(crossv)
+x <- 2:10
+plot(x, crossv[-1], type = "b", xlab = "Degree of polynomial", ylab = "CV estimate of the prediction error", 
+     col=ifelse(x==d2, "red", "black"),  pch=ifelse(x==d2, 19, 1))
+
+```
+
+
+We see here that the error is minimum for $d2=8$ cuts. Now, we fit the entire data with a step function using $d2=8$ cuts and plot it.
+
+```{r 7-6b2, echo=TRUE, warning=FALSE, message=FALSE}
+
+plot(wage ~ age, data = Wage, col = "darkblue")
+agelims <- range(Wage$age)
+age.grid <- seq(from = agelims[1], to = agelims[2])
+fit <- glm(wage ~ cut(age, d2), data = Wage)
+preds <- predict(fit, data.frame(age = age.grid))
+lines(age.grid, preds, col = "red", lwd = 2)
+
+```
+
+
+
+
+### $\color{red}{\text{Q7.7}}$
+
+
+The **Wage** data set contains a number of other features not explored in this chapter, such as marital status (**maritl**), job class (**jobclass**), and others. Explore the relationships between some of these other predictors and **wage**, and use non-linear fitting techniques in order to fit flexible models to the data. Create plots of the results obtained, and write a summary of your findings.
+
+
+### $\color{blue}{\text{Answer 7.7}}$
+
+
+
+
+```{r 7-71, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(1)
+summary(Wage$maritl)
+summary(Wage$jobclass)
+
+par(mfrow = c(1, 2))
+plot(Wage$maritl, Wage$wage)
+plot(Wage$jobclass, Wage$wage)
+
+```
+
+So, from the plots we conclude that a married couple earns more money on average, and also informational jobs earns more on average. We will now use **GAM** to predict *“wage”* using natural spline (ns) functions of *“year”*, *“age”*, *“education”*, *“jobclass”* and *“maritl”*.
+
+```{r 7-72, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(gam)
+
+fit770 <- gam(wage ~ lo(year, span = 0.7) + s(age, 5) + education, data = Wage)
+fit771 <- gam(wage ~ lo(year, span = 0.7) + s(age, 5) + education + jobclass, data = Wage)
+fit772 <- gam(wage ~ lo(year, span = 0.7) + s(age, 5) + education + maritl, data = Wage)
+fit773 <- gam(wage ~ lo(year, span = 0.7) + s(age, 5) + education + jobclass + maritl, data = Wage)
+anova(fit770, fit771, fit772, fit773)
+
+```
+
+From the above table, we may conclude that the model “fit773” is significantly better.
+
+
+```{r 7-73, echo=TRUE, warning=FALSE, message=FALSE}
+
+par(mfrow = c(3, 3))
+plot(fit773, se = T, col = "blue")
+
+```
+
+
+
+
+### $\color{red}{\text{Q7.9}}$
+
+This question uses the variables **dis** (the weighted mean of distances to five Boston employment centers) and **nox** (nitrogen oxides concentration in parts per 10 million) from the **Boston** data. We will treat dis as the predictor and **nox** as the response.
+
+#### $\color{green}{\text{Q7.9a}}$
+
+Use the **poly()** function to fit a cubic polynomial regression to predict **nox** using **dis**. Report the regression output, and plot the resulting data and polynomial fits.
+
+
+### $\color{blue}{\text{Answer 7.9 (a)}}$
+
+
+
+```{r 7-9a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(1)
+
+fit791 <- lm(nox ~ poly(dis, 3), data = Boston)
+summary(fit791)
+
+dislims <- range(Boston$dis)
+dis.grid <- seq(from = dislims[1], to = dislims[2], by = 0.1)
+
+preds <- predict(fit791, list(dis = dis.grid))
+
+plot(nox ~ dis, data = Boston, main = "Third degree polynomial fit")
+
+lines(dis.grid, preds, col = "red", lwd = 2)
+
+
+```
+
+
+It can be concluded that all polynomial terms are significant.
+
+
+
+#### $\color{green}{\text{Q7.9b}}$
+
+Plot the polynomial fits for a range of different polynomial degrees (say, from 1 to 10), and report the associated residual sum of squares.
+
+
+### $\color{blue}{\text{Answer 7.9 (b)}}$
+
+
+
+```{r 7-9b1, echo=TRUE, warning=FALSE, message=FALSE}
+
+rss <- rep(NA, 10)
+for (i in 1:10) {
+    fit792 <- lm(nox ~ poly(dis, i), data = Boston)
+    rss[i] <- sum(fit792$residuals^2)
+}
+plot(1:10, rss, pch=19,  col = "darkgreen", xlab = "Degree", ylab = "RSS", type = "l", lwd = 2)
+
+
+```
+
+
+So, from the graph it seems that the model **RSS** decreases with the degree of the polynomial, and so it is minimum for a polynomial of degree 10.
+
+
+
+
+
+#### $\color{green}{\text{Q7.9c}}$
+
+Perform cross-validation or another approach to select the optimal degree for the polynomial, and explain your results.
+
+
+### $\color{blue}{\text{Answer 7.9 (c)}}$
+
+
+```{r 7-9c1, echo=TRUE, warning=FALSE, message=FALSE}
+
+cvpoly <- rep(NA, 10)
+
+for (i in 1:10) {
+    fit793 <- glm(nox ~ poly(dis, i), data = Boston)
+    cvpoly[i] <- cv.glm(Boston, fit793, K = 10)$delta[1]
+}
+plot(1:10, cvpoly, col = "darkblue", xlab = "Degree", ylab = "Test MSE", type = "l", lwd = 2)
+
+```
+
+
+It may be seen that a polynomial of degree 4 minimizes the test MSE
+
+
+
+
+#### $\color{green}{\text{Q7.9d}}$
+
+Use the **bs()** function to fit a regression spline to predict **nox** using **dis**. Report the output for the fit using four degrees of freedom. How did you choose the knots? Plot the resulting fit.
+
+
+### $\color{blue}{\text{Answer 7.9 (d)}}$
+
+
+```{r 7-9d1, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(1)
+
+fit794 <- lm(nox ~ bs(dis, knots= c(4,7,11)), data = Boston)
+summary(fit794)
+
+dislims <- range(Boston$dis)
+dis.grid <- seq(from = dislims[1], to = dislims[2], by = 0.1)
+
+preds <- predict(fit794, list(dis = dis.grid))
+
+plot(nox ~ dis, data = Boston, main = "Using bs() function", col = "darkgrey")
+
+lines(dis.grid, preds, col = "blue", lwd = 2)
+
+
+```
+
+
+We may want to conclude that all terms in the spline fit are significant.
+
+
+
+#### $\color{green}{\text{Q7.9e}}$
+
+Now fit a regression spline for a range of degrees of freedom, and plot the resulting fits and report the resulting RSS. Describe the results obtained.
+
+### $\color{blue}{\text{Answer 7.9 (e)}}$
+
+```{r 7-9e1, echo=TRUE, warning=FALSE, message=FALSE}
+
+splinerss <- rep(NA, 16)
+for (i in 3:16) {
+    fit795 <- lm(nox ~ bs(dis, df = i), data = Boston)
+    splinerss[i] <- sum(fit795$residuals^2)
+}
+plot(3:16, splinerss[-c(1, 2)], xlab = "Degrees of freedom", ylab = "RSS", type = "l", col = "darkgreen", lwd = 2)
+
+```
+
+
+It may be seen that **Spline RSS** decreases until 14 and then slightly increases after that.
+
+
+
+#### $\color{green}{\text{Q7.9f}}$
+
+Perform cross-validation or another approach in order to select the best degrees of freedom for a regression spline on this data. Describe your results.
+
+### $\color{blue}{\text{Answer 7.9 (f)}}$
+
+
+```{r 7-9f1, echo=TRUE, warning=FALSE, message=FALSE}
+
+cvspline <- rep(NA, 16)
+for (i in 3:16) {
+    fit796 <- glm(nox ~ bs(dis, df = i), data = Boston)
+    cvspline[i] <- cv.glm(Boston, fit796, K = 10)$delta[1]
+}
+
+plot(3:16, cvspline[-c(1, 2)], xlab = "Degrees of freedom", ylab = "Test MSE", type = "l", col = "darkred", lwd = 2)
+
+```
+
+
+It may be seen that **Test MSE** is minimum for **6** degrees of freedom.
+
+
+
+
+### Chapter 5 - E-Book - The Elements of Statistical Learning - Chapter 5.3 - Exercises page 183:
+
+### $\color{red}{\text{Q 5.3}}$
+
+Write a program to reproduce Figure 5.3 on page 145.
+
+### $\color{blue}{\text{Answer 5.3 }}$
+
+
+```{r 5-3, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(1)
+x<-runif(50,0,1)
+x<-sort(x)
+Y<-x + rnorm(50,0,1)
+
+
+# Linear Model
+
+data53 <- data.frame(x,y)
+
+#Global Linear
+fit.linear = lm(y~x,data = data53)
+d.linear = model.matrix(fit.linear)
+fit.linear.var = d.linear %*% vcov(fit.linear) %*% t(d.linear)
+var4 = diag(fit.linear.var)
+
+
+#Cubic Spline - 2 knots 
+fit.bs2 = lm(y~bs(x,knots = c(0.33,0.66)), data = data53)
+d.bs2 = model.matrix(fit.bs2)
+fit.bs2.var = d.bs2 %*% vcov(fit.bs2) %*% t(d.bs2)
+var1 = diag(fit.bs2.var)
+
+
+#Global Cubic Polynomial of order 3
+fit.cubic3 = lm(y~poly(x,3),data = data53)
+d.cubic3 = model.matrix(fit.cubic3)
+fit.cubic3.var = d.cubic3 %*% vcov(fit.cubic3) %*% t(d.cubic3)
+var3 = diag(fit.cubic3.var)
+
+
+#Natural Cubic Spline - 6 knots
+knot6.spacing = (.9-.1)/(4+1)
+ns.knots6 = seq.default(from = .1, to = .9, by = knot6.spacing)
+fit.ns6 = lm(y~ns(x,knots = ns.knots6[-c(1,6)], Boundary.knots = c(0.1,0.9) ), data = data53)
+d.ns6 = model.matrix(fit.ns6)
+fit.ns6.var = d.ns6 %*% vcov(fit.ns6) %*% t(d.ns6)
+var2 = diag(fit.ns6.var)
+
+
+#par(mar = c(4,4,0.5,0.5))
+plot(x,var1,pch=20,type='l',ylim = c(0,0.2),col="green",
+     xlab = "X",ylab = "Pointwise Variances")
+points(x,var1,pch = 20, col = "green")
+lines(x,var2,pch=20,type='l',col="blue")
+points(x,var2,pch = 20, col = "blue")
+lines(x,var3,pch=20,type='l',col="red")
+points(x,var3,pch = 20, col = "red")
+lines(x,var4,pch=20,type='l',col="orange")
+points(x,var4,pch = 20, col = "orange")
+legend("top",legend=c("Cubic Spline - 2 knots","Natural Cubic Spline - 6 knots","Global Cubic Polynomial","Global Linear"),
+       col=c("green","blue","red","orange"),lty=1)
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
