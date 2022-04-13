@@ -1,0 +1,102 @@
+---
+title: "HW3-XGBOOST"
+author: "Santanu Mukherjee"
+date: '2022-04-13'
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+#### $\color{red}{\text{XGBOOST}}$
+
+**The code and results for XGBOOST are displayed below. The findings are:**  
+  
+  **1. For the same max depth, the RMSE has consistently decreased when correlated predictor has been added.**   
+      
+  **2. The R-squared hasn't changed much and it has always been in the range of 0.80 - 0.86 even if more correlated predictor** 
+  **has been added.**
+
+
+
+```{r XGBOOST}
+
+
+##
+# Lets try the same experiment but using boosted trees:
+
+library(mlbench)
+library(caret)
+
+set.seed(200)
+simulated <- mlbench.friedman1(200, sd = 1)
+simulated <- cbind(simulated$x, simulated$y)
+simulated <- as.data.frame(simulated)
+colnames(simulated)[ncol(simulated)] <- "y"
+
+library(xgboost)
+library(caTools)
+
+simulated$duplicate1 = NULL
+simulated$duplicate2 = NULL
+
+ind = createDataPartition(simulated$y, p = 0.8, list=FALSE)
+train.df = simulated[ind,]                   
+test.df  = simulated[-ind,]     
+control.parm = trainControl(method = "CV", number = 10, savePredictions = TRUE, classProbs = TRUE)
+param.grid = expand.grid(eta = 0.1, colsample_bytree = c(0.5,0.7), max_depth=c(3,6), nrounds = 100, 
+                         gamma=1, min_child_weight= 2, subsample = 0.5)
+
+
+#Model1 XG boost
+
+model1.xgbost = train(y~., data = train.df, method = "xgbTree", trControl = control.parm, 
+                      tuneGrid = param.grid)
+model1.xgbost
+
+
+## Plot of Important Variables  
+#summary(model1.xgbost)
+
+# Now we add correlated predictors one at a time - duplicate1
+simulated$duplicate1 = simulated$V1 + rnorm(200) * 0.1
+
+ind = createDataPartition(simulated$y, p = 0.8, list=FALSE)
+train.df = simulated[ind,]                   
+test.df  = simulated[-ind,]     
+
+model2.xgbost = train(y~., data = train.df, method = "xgbTree", trControl = control.parm, 
+                      tuneGrid = param.grid)
+model2.xgbost
+
+
+## Plot of Important Variables  
+summary(model2.xgbost)
+
+
+# adding another correlated predictor this time - duplicate2
+
+simulated$duplicate2 = simulated$V1 + rnorm(200) * 0.1
+
+ind = createDataPartition(simulated$y, p = 0.8, list=FALSE)
+train.df = simulated[ind,]                   
+test.df  = simulated[-ind,]     
+
+model3.xgbost = train(y~., data = train.df, method = "xgbTree", trControl = control.parm, 
+                      tuneGrid = param.grid)
+model3.xgbost
+
+## Plot of Important Variables  
+summary(model3.xgbost)
+
+
+
+
+
+
+```
