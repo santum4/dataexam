@@ -1,0 +1,865 @@
+---
+title: "HW3 Markdown"
+author: "Santanu Mukherjee"
+date: "04/13/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(corrplot)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(MASS)
+library(splines)
+library(gam)
+library(ISLR2)
+library(tree)
+library(randomForest)
+library(ipred)
+library(gbm)
+library(BART)
+
+```
+
+## R Markdown
+
+### $\color{red}{\text{Q 1}}$
+
+Friedman (1991) introduced several benchmark data sets create by simulation. One of these simulations used the following nonlinear equation to create data:
+
+$y$ = $10$ $sin(\pi x_{1}x_{2})$ + $20$$(x_{3} − 0.5)^2$ + $10x_{4}$ + $5x_{5}$ + $N$$(0, \sigma^2)$
+
+where the $x$ values are random variables uniformly distributed between $[0, 1]$ (there are also 5 other non-informative variables also created in the simulation). The package **mlbench** contains a function called **mlbench.friedman1** that simulates these data:
+
+
+```{r 1, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(200)
+simulated <- mlbench.friedman1(200, sd = 1)
+simulated <- cbind(simulated$x, simulated$y)
+simulated <- as.data.frame(simulated)
+colnames(simulated)[ncol(simulated)] <- "y"
+
+str(simulated)
+Cor = round(cor(simulated[,1:10]),4)
+corrplot(Cor, order = "hclust")
+
+```
+
+
+#### $\color{green}{\text{Q 1 a}}$
+
+Fit a random forest model to all of the predictors, then estimate the variable importance scores:
+
+
+```{r 1a, echo=TRUE, warning=FALSE, message=FALSE}
+
+model1 <- randomForest(y ~ ., data = simulated, importance = TRUE, ntree = 5000)
+rfImp1 <- varImp(model1, scale = FALSE)
+
+```
+
+Did the random forest model significantly use the uninformative predictors $(V6 – V10)$?
+
+
+### $\color{blue}{\text{Answer 1 (a)}}$
+
+
+```{r 1a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+rfImp1 = rfImp1[ order(-rfImp1), , drop=FALSE ]
+print("randomForest (no correlated predictor)")
+print(rfImp1)
+cor(simulated$V6, simulated$V1)
+cor(simulated$V7, simulated$V1)
+cor(simulated$V8, simulated$V1)
+cor(simulated$V9, simulated$V1)
+cor(simulated$V10, simulated$V1)
+
+
+```
+
+No. the model did not use the uninformative predictors $(V6 – V10)$ because these uninformative predictors $(V6 – V10)$ are very low correlation with $V1$. Also based on the importance scores, these uninformative predictors $(V6 – V10)$ has very low important scores.
+
+
+#### $\color{green}{\text{Q 1 b}}$
+
+Now add an additional predictor that is highly correlated with one of the informative predictors. For example:
+
+
+```{r 1b, echo=TRUE, warning=FALSE, message=FALSE}
+
+simulated$duplicate1 <- simulated$V1 + rnorm(200) * .1
+cor(simulated$duplicate1, simulated$V1)
+
+```
+
+
+Fit another random forest model to these data. Did the importance score for $V1$ change? What happens when you add another predictor that is
+also highly correlated with $V1$?
+
+
+### $\color{blue}{\text{Answer 1 (b)}}$
+
+
+
+```{r 1b1, echo=TRUE, warning=FALSE, message=FALSE}
+
+model2 = randomForest( y ~ ., data=simulated, importance=TRUE, ntree=5000 )
+rfImp2 = varImp(model2, scale=FALSE)
+rfImp2 = rfImp2[ order(-rfImp2), , drop=FALSE ] 
+print("randomForest (one correlated predictor)")
+print(rfImp2)
+
+simulated$duplicate2 = simulated$V1 + rnorm(200) * 0.1
+cor(simulated$duplicate2,simulated$V1)
+
+model3 = randomForest( y ~ ., data=simulated, importance=TRUE, ntree=5000 )
+rfImp3 = varImp(model3, scale=FALSE)
+rfImp3 = rfImp3[ order(-rfImp3), , drop=FALSE ] 
+print("randomForest (two correlated predictors)")
+print(rfImp3)
+
+
+```
+
+
+So, when the first highly correlated additional predictor ($duplicate1$) to $V1$ was added, the importance score for V1 reduced from **8.795** to **6.177**. But, when another highly correlated additional predictor ($duplicate2$) to $V1$ was added, the importance score for V1 reduced to **5.524**. So, based on the trend we can say that as we keep adding highly correlated predictors to $V1$, the importance score of $V1$ keeps reducing.
+
+
+
+#### $\color{green}{\text{Q 1 c}}$
+
+Use the **cforest** function in the party package to fit a random forest model using conditional inference trees. The party package function **varimp** can calculate predictor importance. Do these importances show the same pattern as the traditional random forest model in part (a)?
+
+
+### $\color{blue}{\text{Answer 1 (c)}}$
+
+
+
+```{r 1c, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(party)
+
+use_conditional_true = T # whether to use the conditional argument in the cforest function call 
+
+simulated$duplicate1 = NULL
+simulated$duplicate2 = NULL
+
+model1 = cforest( y ~ ., data=simulated )
+cfImp1 = as.data.frame(varimp(model1),conditional=use_conditional_true)
+cfImp1 = cfImp1[ order(-cfImp1), , drop=FALSE ] 
+print(sprintf("cforest (no correlated predictor); varimp(*,conditional=%s)",use_conditional_true))
+print(cfImp1)
+
+# Now we add correlated predictors one at a time 
+simulated$duplicate1 = simulated$V1 + rnorm(200) * 0.1
+
+model2 = cforest( y ~ ., data=simulated )
+cfImp2 = as.data.frame(varimp(model2),conditional=use_conditional_true)
+cfImp2 = cfImp2[ order(-cfImp2), , drop=FALSE ]  
+print(sprintf("cforest (one correlated predictor); varimp(*,conditional=%s)",use_conditional_true))
+print(cfImp2)
+
+simulated$duplicate2 = simulated$V1 + rnorm(200) * 0.1
+
+model3 = cforest( y ~ ., data=simulated )
+cfImp3 = as.data.frame(varimp(model3),conditional=use_conditional_true)
+cfImp3 = cfImp3[ order(-cfImp3), , drop=FALSE ] 
+print(sprintf("cforest (two correlated predictor); varimp(*,conditional=%s)",use_conditional_true))
+print(cfImp3)
+
+
+```
+
+Now, with **cforest**, we see a similar trend. that the importance score of $V1$ keeps reducing as we introduce additional predictors in the model which are highly correlated to $V1$.
+
+
+
+
+#### $\color{green}{\text{Q 1 d}}$
+
+
+Repeat this process with different tree models that we discussed in the class and also you need to consider two new **Cubist** and **XGBoost** Regression methods (You may use **Google** to search and study). Does the same pattern occur?
+
+
+### $\color{blue}{\text{Answer 1 (d)}}$
+
+Boosting Method
+
+```{r 1d1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Lets try the same experiment but using boosted trees:
+
+library(gbm)
+
+simulated$duplicate1 = NULL
+simulated$duplicate2 = NULL
+      
+model1 = gbm( y ~ ., data=simulated, distribution="gaussian", n.trees=5000 ) 
+print(sprintf("gbm (no correlated predictor)"))
+print(summary(model1,plotit=F)) # the summary method gives variable importance ... 
+rel_inf = relative.influence(model1, n.trees=5000)
+rel_inf = sort(rel_inf, decreasing=T)/sum(rel_inf)*100
+sum(rel_inf[1:2])
+
+## Plot of Important Variables  
+summary(model1)
+
+# Now we add correlated predictors one at a time 
+simulated$duplicate1 = simulated$V1 + rnorm(200) * 0.1
+
+model2 = gbm( y ~ ., data=simulated, distribution="gaussian", n.trees=5000 ) 
+print(sprintf("gbm (one correlated predictor)"))
+print(summary(model2,plotit=F))
+
+## Plot of Important Variables  
+summary(model2)
+
+
+simulated$duplicate2 = simulated$V1 + rnorm(200) * 0.1
+
+model3 = gbm( y ~ ., data=simulated, distribution="gaussian", n.trees=5000 ) 
+print(sprintf("gbm (two correlated predictor)"))
+print(summary(model3,plotit=F))
+
+## Plot of Important Variables  
+summary(model3)
+
+
+```
+
+
+
+
+Using **Cubist** 
+
+```{r 1d2, echo=TRUE, warning=FALSE, message=FALSE}
+
+##
+# Lets try the same experiment but using boosted trees:
+
+library(Cubist)
+
+
+simulated$duplicate1 = NULL
+simulated$duplicate2 = NULL
+
+pred = simulated[-11]
+resp = simulated$y
+model1.cubist = cubist(x = pred, y = resp)
+model1.cubist
+
+## Plot of Important Variables  
+summary(model1.cubist)
+
+model1.cubist.imp = caret::varImp(model1.cubist)
+
+
+
+# Now we add correlated predictors one at a time - Duplicate1
+simulated$duplicate1 = simulated$V1 + rnorm(200) * 0.1
+
+pred = simulated[-11]
+resp = simulated$y
+model2.cubist = cubist(x = pred, y = resp)
+model2.cubist
+
+## Plot of Important Variables  
+summary(model2.cubist)
+
+model2.cubist.imp = caret::varImp(model2.cubist)
+
+
+## Next we add another correlated predictor - Duplicate2
+simulated$duplicate2 = simulated$V1 + rnorm(200) * 0.1
+
+pred = simulated[-11]
+resp = simulated$y
+model3.cubist = cubist(x = pred, y = resp)
+model3.cubist
+
+## Plot of Important Variables  
+summary(model3.cubist)
+
+model3.cubist.imp = caret::varImp(model3.cubist)
+
+
+```
+
+As we add on correlated predictors , the error rate (MSE on training data) decreases.
+
+
+
+
+```{r 1d3, echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE}
+
+##
+# Lets try the same experiment but using boosted trees:
+
+library(xgboost)
+library(caTools)
+
+simulated$duplicate1 = NULL
+simulated$duplicate2 = NULL
+
+ind = createDataPartition(simulated$y, p = 0.8, list=FALSE)
+train.df = simulated[ind,]                   
+test.df  = simulated[-ind,]     
+control.parm = trainControl(method = "CV", number = 10, savePredictions = TRUE, classProbs = TRUE)
+param.grid = expand.grid(eta = 0.1, colsample_bytree = c(0.5,0.7), max_depth=c(3,6), nrounds = 1000, gamma=1, min_child_weight= 2, subsample = 0.5)
+                     
+
+#Model1 XG boost
+
+model1.xgbost = train(y~., data = train.df, method = "xgbTree", trControl = control.parm, tuneGrid = param.grid)
+model1.xgbost
+
+
+## Plot of Important Variables  
+#summary(model1.xgbost)
+
+# Now we add correlated predictors one at a time - duplicate1
+simulated$duplicate1 = simulated$V1 + rnorm(200) * 0.1
+
+ind = createDataPartition(simulated$y, p = 0.8, list=FALSE)
+train.df = simulated[ind,]                   
+test.df  = simulated[-ind,]     
+
+model2.xgbost = train(y~., data = train.df, method = "xgbTree", trControl = control.parm, tuneGrid = param.grid)
+model2.xgbost
+
+
+## Plot of Important Variables  
+summary(model2.xgbost)
+
+
+# adding another correlated predictor this time - duplicate2
+
+simulated$duplicate2 = simulated$V1 + rnorm(200) * 0.1
+
+ind = createDataPartition(simulated$y, p = 0.8, list=FALSE)
+train.df = simulated[ind,]                   
+test.df  = simulated[-ind,]     
+
+model3.xgbost = train(y~., data = train.df, method = "xgbTree", trControl = control.parm, tuneGrid = param.grid)
+model3.xgbost
+
+## Plot of Important Variables  
+summary(model3.xgbost)
+##
+
+```
+
+
+
+
+
+
+### $\color{red}{\text{Q 2}}$
+
+The **“churn”** data set in the $MLC++$ software package was developed to predict telecom customer churn based on information about their account. The data files state that the data are *“artificial based on claims similar to real world.”* The data consist of **19** predictors related to the customer account, such as the number of customer service calls, the area code, and the number of minutes. The outcome is whether the customer churned.
+
+The data are contained in the C50 package and can be loaded using
+
+
+```{r 2, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(modeldata)
+data(mlc_churn)
+## Two objects are loaded: churnTrain and churnTest
+str(mlc_churn)
+table(mlc_churn$churn)
+set.seed(1)
+ind = sample(2, nrow(mlc_churn), replace=TRUE,prob = c(0.8,0.2))
+churnTrain = mlc_churn[ind==1,]
+churnTest  = mlc_churn[ind==2,]
+
+```
+
+
+#### $\color{green}{\text{Q 2 a}}$
+
+Explore the data by visualizing the relationship between the predictors and the outcome.Are there important features of the predictor data themselves, such as between-predictor correlations or degenerate distributions? Can functions of more than one predictor be used to model the data more effectively?
+
+
+### $\color{blue}{\text{Answer 2 (a)}}$
+
+
+
+```{r 2a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Drop all factor predictors:
+#
+churnTrain1 = churnTrain[,-c(1,3,4,5)]
+churnTest1 = churnTest[,-c(1,3,4,5)]
+
+# Build various linear models:
+#
+x1 = churnTrain1[,-16] # drop the churn response
+y1 = churnTrain1[,16]
+
+
+
+#Correlation plot with other predictors
+#pairs(x[,1:15])
+Cor = round(cor(x1[,1:15]))
+#ggcorrplot(Cor)
+
+library(corrplot)
+corrplot(Cor, order = "hclust")
+
+
+highCorr <- findCorrelation(Cor, cutoff = .5)
+head(highCorr)
+
+
+# Look for (and drop) zero variance columns:
+zv_cols = nearZeroVar(x1)
+w = x1[,-zv_cols]
+
+# There are no nearzeroVar columns
+
+print("There are not nearZeroVar predictors")
+
+# Get a high level View of which predictors might be most predictive:
+# 
+
+
+```
+
+
+There are no nearzeroVar columns which means all predictors are important. There are few predictors which havestrong correlation.
+
+
+
+
+
+#### $\color{green}{\text{Q 2 b}}$
+
+Apply boosting, bagging, random forests, and $BART$ to this data set. Be sure to fit the models on a training set and to evaluate their performance on a test set. How accurate are the results compared to simple methods like linear or logistic regression? What criteria should be used to evaluate the effectiveness and performance of the models.    
+
+
+### $\color{blue}{\text{Answer 2 (b)}}$
+
+
+```{r 2b1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Modelling - bagging boosting, random forests and BART
+# Random forest , bagging
+
+# y is the churnTrain response
+
+
+churnTrain1$y = ifelse(churnTrain1$churn == "yes",1,0)
+churnTest1$y = ifelse(churnTest1$churn == "yes",1,0)
+
+churnTrainreal = churnTrain1[,-16]
+churnTestreal = churnTest1[,-16]
+
+
+
+#Bagging
+
+sim.bag = bagging(y ~ ., data = churnTrainreal, ntree = 3000, mtry = 2, na.action=na.omit)
+sim.bag.pred.tr = predict(sim.bag, newdata = churnTrainreal, type = "class")
+sim.bag.pred.te = predict(sim.bag, newdata = churnTestreal, type = "class")
+print("Testing error using bagging")
+errbag = sqrt(mean((sim.bag.pred.te - churnTestreal$y)^2))
+
+
+
+#Random Forest
+
+sim.rf = randomForest(y ~ ., data = churnTrainreal, ntree = 3000, mtry = 2, na.action=na.omit)
+sim.rf.pred.tr = predict(sim.rf, newdata = churnTrainreal, type = "class")
+sim.rf.pred.te = predict(sim.rf, newdata = churnTestreal, type = "class")
+print("Testing error using Random Forest")
+errrf = sqrt(mean((sim.rf.pred.te - churnTestreal$y)^2))
+
+
+#boosting
+
+sim.boost = gbm(y ~ ., data = churnTrainreal, shrinkage=0.01, 
+  distribution = 'bernoulli', n.trees = 3000, verbose=F)
+sim.b.pred.tr = predict(sim.boost, newdata = churnTrainreal, n.trees = 1000, type = "response")
+sim.b.pred.tr = ifelse(sim.b.pred.tr>0.5,1,0)
+sim.b.pred.te = predict(sim.boost, newdata = churnTestreal, n.trees = 1000, type = "response")
+sim.b.pred.te = ifelse(sim.b.pred.te>0.5,1,0)
+print("Testing error using boost")
+errboost = sqrt(mean((sim.b.pred.te - churnTestreal$y)^2))
+
+
+#BART 
+
+#library(rJava)
+#library(bartMachine)
+
+#sim.bart = bart(churnTrainreal, y, ndpost = 200)
+
+#sim.bart = bart(y ~ ., data = churnTrainreal, ntree = 3000, mtry = 2, na.action=na.omit)
+#sim.bart.pred.tr = predict(sim.bart, newdata = churnTrainreal, type = "class")
+#sim.bart.pred.te = predict(sim.bart, newdata = churnTestreal, type = "class")
+#print("Testing error using BART")
+#sqrt(mean((sim.bart.pred.te - churnTestreal$y)^2))
+
+
+
+# Linear Regression
+
+sim.lm = lm(y ~ ., data = churnTrainreal)
+sim.lm.pred.tr = predict(sim.lm, newdata = churnTrainreal)
+sim.lm.pred.te = predict(sim.lm, newdata = churnTestreal)
+print("Testing error using Random Forest")
+errlm = sqrt(mean((sim.lm.pred.te - churnTestreal$y)^2))
+
+
+#Logistic Regression
+sim.glm <- glm(as.factor(y) ~ ., data = churnTrainreal, family = "binomial")
+sim.glm.pred.tr = predict(sim.glm, newdata = churnTrainreal)
+sim.glm.pred.te = predict(sim.glm, newdata = churnTestreal)
+print("Testing error using Logistic Regression")
+errlogit = sqrt(mean((sim.glm.pred.te - churnTestreal$y)^2))
+
+
+```
+
+
+
+```{r 2b2, echo=TRUE, warning=FALSE, message=FALSE}
+
+results.table <- data.frame(errbag, errrf, errboost, errlm, errlogit)
+
+colnames(results.table) = c("Error Bagging", "Error Random Forest", "Error Boosting", "Error Linear Regression", "Error Logistic Regression")
+
+results.table
+
+
+
+```
+
+
+**Based on the data, we can say that Bagging has the least RMSE and so it is the most effective model.**
+
+
+
+
+### Chapter 8 - Book - An Introduction to Statistical Learning - 8.4 - Exercises page 334: 
+
+### $\color{red}{\text{Q8.4.9}}$
+
+This problem involves the **OJ** data set which is part of the **ISLR2** package.
+
+
+```{r 849, echo=TRUE, warning=FALSE, message=FALSE}
+
+glimpse(OJ)
+
+```
+
+
+
+#### $\color{green}{\text{Q 8.4.9 a}}$
+
+Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations.
+
+### $\color{blue}{\text{Answer 8.4.9 (a)}}$
+
+
+
+```{r 849a, echo=TRUE, warning=FALSE, message=FALSE}
+
+require(ISLR)
+
+set.seed(5)
+
+train=sample(1:nrow(OJ),800)
+
+train.OJ=OJ[train,]
+test.OJ=OJ[-train,]
+
+
+
+```
+
+
+
+#### $\color{green}{\text{Q 8.4.9 b}}$
+
+
+Fit a tree to the training data, with **Purchase** as the response and the other variables as predictors. Use the **summary()** function to produce summary statistics about the tree, and describe the results obtained. What is the training error rate? How many terminal nodes does the tree have?
+
+
+### $\color{blue}{\text{Answer 8.4.9 (b)}}$
+
+
+```{r 849b, echo=TRUE, warning=FALSE, message=FALSE}
+
+tree.OJ <- tree(Purchase ~ .,data=train.OJ)
+
+summary(tree.OJ)
+
+
+```
+
+
+The classification tree has 9 terminal nodes and a training error rate of 16.62%.
+
+Although there are 17 predictors in the dataset, only 3 were used in splits. These were:
+
+LoyalCH , PriceDiff , ListPriceDiff
+
+
+
+#### $\color{green}{\text{Q 8.4.9 c}}$
+
+Type in the name of the tree object in order to get a detailed text output. Pick one of the terminal nodes, and interpret the information displayed.
+
+
+### $\color{blue}{\text{Answer 8.4.9 (c)}}$
+
+
+```{r 849c, echo=TRUE, warning=FALSE, message=FALSE}
+
+tree.OJ
+
+```
+
+
+Choosing node 11), which is a terminal node as it is marked by a *:
+
+First the root node: 1) root 800 1068.00 CH ( 0.61250 0.38750 )
+
+This means that, at the root node, there are 800 observations, the deviance is 1068.00, the overall prediction is CH and the split is 61.25% CH vs 38.75% MM.
+
+We can see that, from the root node, three splits take place to produce the terminal node labelled by 11):
+
+A split at LoyalCH = 0.5036
+A split at LoyalCH = 0.280875 164
+A split at LoyalCH = 0.280875 182
+
+
+
+#### $\color{green}{\text{Q 8.4.9 d}}$
+
+Create a plot of the tree, and interpret the results.
+
+### $\color{blue}{\text{Answer 8.4.9 (d)}}$
+
+
+```{r 849d, echo=TRUE, warning=FALSE, message=FALSE}
+
+plot(tree.OJ)
+text(tree.OJ, cex = 0.9)
+
+```
+
+So, looking at the diagram , we can make some quick observations.         
+    
+1. The left branch shows that when there is a relative low customer loyalty for Citrus Hill then the Minute Maid is chosen. Otherwise, the cheaper drink will be the one purchased.        
+
+2. Similarly, in the right sub tree this model predicts that when there is a strong preference for Citrus Hill it will always be the drink chosen.              
+
+3. When the List Price Diff is lower, then the customer will purchase Citrus Hill 
+
+
+
+#### $\color{green}{\text{Q 8.4.9 e}}$
+
+Predict the response on the test data, and produce a confusion matrix comparing the test labels to the predicted test labels. What is the test error rate?
+
+### $\color{blue}{\text{Answer 8.4.9 (e)}}$
+
+The confusion matrix with test data
+
+```{r 849e1, echo=TRUE, warning=FALSE, message=FALSE}
+
+test.pred.OJ <- predict(tree.OJ, test.OJ, type = "class")
+table(test.pred.OJ, test_actual = test.OJ$Purchase)
+
+```
+
+The test error rate is given below.
+
+```{r 849e2, echo=TRUE, warning=FALSE, message=FALSE}
+
+1 - mean(test.pred.OJ == test.OJ$Purchase)
+
+```
+
+
+
+
+#### $\color{green}{\text{Q 8.4.9 f}}$
+
+Apply the **cv.tree()** function to the training set in order to determine the optimal tree size.
+
+
+### $\color{blue}{\text{Answer 8.4.9 (f)}}$
+
+
+Now, we want to get low test error, so, I specify FUN = prune.misclass. So, this indicates that we want the classification error rate to help us with the cross-validation and pruning process, instead of using the default for the cv.tree() function, meaning deviance.
+
+```{r 849f, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(2)
+
+cv.tree.OJ <- cv.tree(tree.OJ, K = 10, FUN = prune.misclass)
+cv.tree.OJ
+
+```
+
+
+#### $\color{green}{\text{Q 8.4.9 g}}$
+
+Produce a plot with tree size on the x-axis and cross-validated classification error rate on the y-axis.
+
+
+### $\color{blue}{\text{Answer 8.4.9 (g)}}$
+
+The plot is below. Note that size is on the x-axis and CV_Error is on the Y-axis. Size (X-axis) is the number of terminal nodes (so 1 means it is just the root node with no splits), and CV_Error (Y-Axis) gives the total number of errors made from the out-of-fold predictions during cross-validation (only because we specified FUN = prune.misclass - omitting this would mean this reports the deviance). From this we can obtain the cross-validation error rate.
+
+```{r 849g, echo=TRUE, warning=FALSE, message=FALSE}
+
+#plot(cv.tree.OJ)
+
+data.frame(size = cv.tree.OJ$size, CV_Error = cv.tree.OJ$dev / nrow(train.OJ)) %>%
+ggplot(aes(x = size, y = CV_Error)) +
+  geom_line(col = "red") +
+  geom_point(size = 2) +
+  scale_x_continuous(breaks = seq(1, 7), minor_breaks = NULL) +
+  scale_y_continuous(labels = scales::percent_format()) +
+  scale_color_manual(values = c("deepskyblue3", "green")) +
+  theme(legend.position = "top") +
+  labs(title = "OJ Dataset - Classification Tree",
+       subtitle = "Selecting tree 'size' (# of terminal nodes) using cross-validation",
+       x = "Tree Size",
+       y = "CV Error")
+
+
+```
+
+
+
+#### $\color{green}{\text{Q 8.4.9 h}}$
+
+Which tree size corresponds to the lowest cross-validated classification error rate?
+
+
+### $\color{blue}{\text{Answer 8.4.9 (h)}}$
+
+Of the sequence of trees generated, trees of sizes 5 and 6 have the same cross-validation error. It makes sense to select the more parsimonious model here with 5 terminal nodes.
+
+
+
+#### $\color{green}{\text{Q 8.4.9 i}}$
+
+
+Produce a pruned tree corresponding to the optimal tree size obtained using cross-validation. If cross-validation does not lead to selection of a pruned tree, then create a pruned tree with five terminal nodes.
+
+
+### $\color{blue}{\text{Answer 8.4.9 (i)}}$
+
+
+So, I found out earlier that the tree with 5 and 6 terminal nodes have the same cross-validation error. Now, here below I produce the pruned tree with 5 terminal nodes.
+
+
+```{r 849i, echo=TRUE, warning=FALSE, message=FALSE}
+
+pruned.OJ <- prune.tree(tree.OJ, best = 5)
+pruned.OJ
+
+```
+
+
+
+
+#### $\color{green}{\text{Q 8.4.9 j}}$
+
+
+Compare the training error rates between the pruned and unpruned trees. Which is higher?
+
+
+### $\color{blue}{\text{Answer 8.4.9 (j)}}$
+
+
+Below is the training error for the unpruned tree 
+
+
+```{r 849j1, echo=TRUE, warning=FALSE, message=FALSE}
+
+mean(predict(tree.OJ, type = "class") != train.OJ$Purchase)
+
+```
+
+
+
+Below is the training error for the pruned tree  
+
+
+```{r 849j2, echo=TRUE, warning=FALSE, message=FALSE}
+
+mean(predict(pruned.OJ, type = "class") != train.OJ$Purchase)
+
+```
+
+
+What we see here is that the training error for the pruned tree is higher. This is what is expected as the training error of a tree monotonically decreases as its flexibility (number of splits) increases.
+
+
+#### $\color{green}{\text{Q 8.4.9 k}}$
+
+
+Compare the test error rates between the pruned and unpruned trees. Which is higher?
+
+
+### $\color{blue}{\text{Answer 8.4.9 (k)}}$
+
+
+
+Below is the test error for the unpruned tree 
+
+
+```{r 849k1, echo=TRUE, warning=FALSE, message=FALSE}
+
+mean(predict(tree.OJ, type = "class", data = test.OJ) != test.OJ$Purchase)
+
+```
+
+
+
+Below is the test error for the pruned tree  
+
+
+```{r 849k2, echo=TRUE, warning=FALSE, message=FALSE}
+
+mean(predict(pruned.OJ, type = "class", data = test.OJ) != test.OJ$Purchase)
+
+```
+
+
+So, here also the test error is higher for the pruned tree.
+  
+
+
+
+
+
