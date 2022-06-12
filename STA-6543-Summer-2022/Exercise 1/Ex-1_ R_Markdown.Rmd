@@ -1,0 +1,385 @@
+---
+title: "Exercise-1 R Markdown"
+author: "Santanu Mukherjee"
+date: "06/12/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+
+```
+
+## R Markdown
+
+
+### Exercise 1
+
+### $\color{red}{\text{Q1}}$
+
+
+Consider a well-known dataset on per capita income and per capita spending in public schools by state in the United States in 1979. (Available on blackboard). This dataset has been widely analyzed in various statistical. As in those previous analyses, we take per capita spending (Expenditure) as the dependent variable and per capita income as the predictor variable.  
+
+
+```{r 1, echo=TRUE, warning=FALSE, message=FALSE}
+
+df.inc.exp <- read.table("https://github.com/santum4/dataexam/raw/main/STA-6543-Summer-2022/Exercise%201/Income.txt", header = T)
+
+
+str(df.inc.exp)
+
+```
+
+
+#### $\color{green}{\text{Q 1 a}}$
+
+(a) Draw a scatter-plot to check the relationship between Income and Expenditure and interpret the relationship between Income and Expenditure.
+
+### $\color{blue}{\text{Answer 1 (a)}}$
+
+
+```{r 1a, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Scatter Plot
+
+df.work = df.inc.exp[,-1]
+df.work = df.work[,c(2,1)]
+
+ggplot(df.work, aes(x=Income, y=Expenditure))+geom_point()+geom_smooth(se=FALSE)
+
+```
+
+From the above scatterplot, we can say that the relationship between Income and Expenditure is non-linear. Also it can be said that we see an upward rising trend in expenditure with rising income.
+
+
+#### $\color{green}{\text{Q 1 b}}$
+
+(b) Find and interpret the slope for the least squares regression line 
+
+### $\color{blue}{\text{Answer 1 (b)}}$
+
+
+
+```{r 1b, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Least square regression
+
+set.seed(1)
+lm.fit = lm(Expenditure~Income, data=df.work)
+summary(lm.fit)
+
+```
+
+The slope of the least square is **positive** $(0.06894)$ which means that on an average, for every unit increase in Income, the least square regression model predicts an increase of 0.06894 in Expenditure.   
+
+
+#### $\color{green}{\text{Q 1 c}}$
+
+(c) Find and interpret y-intercept for the least squares regression line 
+
+### $\color{blue}{\text{Answer 1 (c)}}$
+
+The y-intercept is **negative** $(-151.26509)$. This means that when x(Income) is zero, then y(Expenditure) will be -151.26509. In reality, this cannot happen and so this tells me that the linear model is not the best fit for this dataset.
+
+
+#### $\color{green}{\text{Q 1 d}}$
+
+(d) Find the least square regression equation and circle the results from your outputs. 
+
+### $\color{blue}{\text{Answer 1 (d)}}$
+
+$Expenditure = -151.26509 + (0.06894)Income$
+
+     
+           
+
+#### $\color{green}{\text{Q 1 e}}$
+
+(e) Find proportion of the variation that can be explained by the least squares regression line (i.e., $R^{2}$). 
+
+### $\color{blue}{\text{Answer 1 (e)}}$
+
+So, we know that Total Sum of Squares (TSS) = Model Sum of Squares(MSS) + Residuals (RSS)
+
+$R^2$ =  $\frac{(TSS - RSS)}{TSS}$ = $1 - \frac{RSS}{TSS}$ = $\frac{MSS}{TSS}$ = $\frac{Explained Variation by Model}{Total Variation}$
+      = Coefficient of Variation
+          
+   
+Range of $R^2$ is between $0$ and $1$  
+
+Here the value of $R^2$ is $0.5868$. This means that 58% of the variability observed in the target variable is explained by the regression model.
+
+
+
+#### $\color{green}{\text{Q 1 f}}$
+
+(f)	Find the estimator of $\sigma^{2}$  (i.e., $s^{2}$) and interpret the value of this estimator. 
+
+### $\color{blue}{\text{Answer 1 (f)}}$
+
+We use $\hat{\sigma}^{2}$ = $s^{2}$ = $MSE$ = $\frac{RSS}{n - 2}$ as an estimate of $\sigma^{2}$ . Here $n$ = $50$
+
+Also if we take the square of  **Residual Standard Error** (which in this case is $61.41$) , we would get $\hat{\sigma}^{2}$.
+
+So the estimator of $\sigma^{2}$ is ${61.41}^2$ = $3771.1881$
+
+Along with $R^2$, the **Residual standard Error** metric is often used to measure the goodness of fit , meaning it measures how well a regression model fits a dataset. The smaller the value of the residual standard error, the better the regression model fits the dataset. Here the **Residual standard Error** is $significantly$ $LARGE$, which means that the Linear model is $NOT$ a good fit. 
+
+
+#### $\color{green}{\text{Q 1 g}}$
+
+(g)	Check if the data contain any outlier or influential points?
+
+### $\color{blue}{\text{Answer 1 (g)}}$
+
+
+```{r 1g1, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+#Studentized deleted residuals to detect outliers, Measures detecting outlying Y
+
+p.rstud = 1 - pt(abs(rstudent(lm.fit)), length(df.work$Expenditure) - 3)
+p.rstud
+
+p.rstud[p.rstud<0.05]
+
+p.rstud[p.rstud<0.025]
+
+par(mfrow = c(2,2))
+plot(lm.fit)
+
+#Identifying outlying X observations – HAT matrix leverage values
+
+hat.lm = hatvalues(lm.fit); hat.lm[hat.lm>2*2/length(df.work$Expenditure)]
+
+
+```
+
+The outliers are identified through using Studentized deleted residuals (y values) and HAT matrix leverage values (x values).
+
+
+```{r 1g2, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+# Cooks Distance to identify influential points
+
+cooksD <- cooks.distance(lm.fit)
+influential <- cooksD[(cooksD > (3 * mean(cooksD, na.rm = TRUE)))]
+influential
+
+
+```
+
+The influential points are identified by utilizing the **cooks.distance** function on the model and then filtering out any values greater than $3x$ the mean.
+
+
+#### $\color{green}{\text{Q 1 h}}$
+
+(h) Fit a single linear model and conduct 10-fold CV to estimate the error. In addition, draw the scatter plot with the fitted line and the scatter plot between the observed and fitted values below. 
+
+### $\color{blue}{\text{Answer 1 (h)}}$
+
+
+```{r 1h1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Single Linear regression with 10 fold CV
+
+# define the number of folds , here CV = 10
+train_control = trainControl(method = "CV", number = 10)
+
+# Run linear regression with Cross Validation 10 fold (CV = 10)
+set.seed(1)
+lm.cv.fit1 = train(Expenditure~Income, data = df.inc.exp, method = 'lm', trControl = train_control )
+print(lm.cv.fit1)
+
+```
+
+Based on the results, for **Linear Regression**, the error ($RMSE$) is $58.40613$ and $R^2$ is $0.5929131$.
+
+
+```{r 1h2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Scatter plot with the fitted line and the residual vs fitted values graph
+
+ggplot(df.inc.exp, aes(x=Income, y=Expenditure)) + geom_point() + geom_smooth(method=lm, se=FALSE)
+
+res <- stack(data.frame(Observed = df.inc.exp$Expenditure, Fitted = fitted(lm.fit)))
+res <- cbind(res, x = rep(df.inc.exp$Income, 2))
+
+require("lattice")
+
+xyplot(values ~ x, data = res, group = ind, auto.key = TRUE, main = "Observed vs Fitted Values for Linear Model")
+
+
+```
+
+
+#### $\color{green}{\text{Q 1 i}}$
+
+(i) Fit a quadratic model and conduct 10-fold CV to estimate the error and draw the scatter plot with the fitted line and the scatter plot between the observed and fitted values. 
+
+### $\color{blue}{\text{Answer 1 (i)}}$
+
+
+```{r 1i1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Quadratic regression with 10 fold CV
+
+# define the number of folds , here CV = 10
+train_control = trainControl(method = "CV", number = 10)
+
+# Run linear regression with Cross Validation 10 fold (CV = 10)
+set.seed(1)
+df.inc.exp$Income2 = df.inc.exp$Income^2
+lm.qd.cv.fit2 = train(Expenditure~Income + Income2, data = df.inc.exp, method = 'lm', trControl = train_control )
+print(lm.qd.cv.fit2)
+
+```
+
+Based on the results, for **Quadratic Model**, the error ($RMSE$) is $63.52598$ and $R^2$ is $0.5506899$.
+
+
+```{r 1i2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Scatter plot with the fitted line and the residual vs fitted values graph
+
+lm.qd.fit2 = lm(Expenditure~ poly(Income,2) + Income2, data = df.inc.exp)
+
+df.inc.exp %>%     
+plot_ly() %>%  
+add_lines(x = ~Income, y = fitted(lm.qd.fit2)) %>%
+add_trace(x=~Income, y=~Expenditure)
+
+
+res <- stack(data.frame(Observed = df.inc.exp$Expenditure, Fitted = fitted(lm.qd.fit2)))
+res <- cbind(res, x = rep(df.inc.exp$Income, 2))
+head(res)
+require("lattice")
+
+xyplot(values ~ x, data = res, group = ind, auto.key = TRUE, main = "Observed vs Fitted Values for Quadratic Model")
+
+
+```
+
+
+#### $\color{green}{\text{Q 1 j}}$
+
+(j) Fit a mars model with optimal tuning parameters that you choose and conduct 10-fold CV to estimate the error and draw the scatter plot with the fitted line and the scatter plot between the observed and fitted values. 
+
+### $\color{blue}{\text{Answer 1 (j)}}$
+
+
+
+```{r 1j1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Mars Model fitment
+
+library(earth)
+library(caret)
+
+#create a tuning grid
+hyper_grid <- expand.grid(degree = 1:3,
+                          nprune = seq(2, 50, length.out = 10) %>%
+                          floor())
+
+set.seed(1)
+
+#fit MARS model using 10-fold cross-validation
+model.cv_mars <- train(
+  x = subset(df.work, select = -Expenditure),
+  y = df.work$Expenditure,
+  method = "earth",
+  metric = "RMSE",
+  trControl = trainControl(method = "cv", number = 10),
+  tuneGrid = hyper_grid)
+
+#display model with lowest test RMSE
+print(model.cv_mars$bestTune)
+
+model.cv_mars$results %>%
+  filter(nprune==model.cv_mars$bestTune$nprune, degree == model.cv_mars$bestTune$degree) 
+
+
+```
+
+Based on the **MARS** model results, the lowest error ($RMSE$) is $66.70138$ and $R^2$ is $0.5563583$.
+
+
+
+```{r 1j2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Mars Scatter plot with the fitted line 
+
+
+ggplot(df.work, aes(x=Income, y=fitted(model.cv_mars))) + geom_point() + geom_smooth(method=earth, se=FALSE)
+
+ggplot(model.cv_mars)
+
+
+# Observed values vs fitted values graph
+
+res <- stack(data.frame(Observed = df.inc.exp$Expenditure, Fitted = fitted(model.cv_mars)))
+res <- cbind(res, x = rep(df.inc.exp$Income, 2))
+
+require("lattice")
+
+xyplot(values ~ x, data = res, group = ind, auto.key = TRUE, main = "Observed vs Fitted Values for Mars Model")
+
+
+```
+
+    
+    
+
+#### $\color{green}{\text{Q 1 k}}$
+
+(k) Compare the three fitted models in terms of $RMSE$ and $R^2$, and then make a recommendation based on your criteria. 
+
+### $\color{blue}{\text{Answer 1 (k)}}$
+
+
+Based on the data for the 3 fitted models in terms of $RMSE$ and $R^2$, the best model is the **Linear Regression** Model, because it has the **lowest** $RMSE$ and **highest** $R^2$.   
+
+      
+           
+           
+       
+       
+       
+       
+
+  
+
+
+    
+        
+            
+
+
+
+
+
+
+
+
+
