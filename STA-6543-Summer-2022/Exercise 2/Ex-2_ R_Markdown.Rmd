@@ -1,0 +1,189 @@
+---
+title: "Exercise 2 R Markdown"
+author: "Santanu Mukherjee"
+date: "06/18/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+
+```
+
+## R Markdown
+
+
+### $\color{red}{\text{Q1}}$
+
+
+1. The UC Irvine Machine Learning Repository6 contains a data set related to glass identification. The data consist of 214 glass samples labeled as one of seven class categories. There are nine predictors, including the refractive index and percentages of eight elements: 
+$Na$, $Mg$, $Al$, $Si$, $K$, $Ca$, $Ba$, and $Fe$.
+The data can be accessed via:
+
+```{r 1-1, echo=TRUE, warning=FALSE, message=FALSE}
+library(mlbench)
+data(Glass)
+str(Glass)
+
+```
+
+
+#### $\color{green}{\text{Q 1.1a}}$
+
+(a) Using visualizations, explore the predictor variables to understand their distributions as well as the relationships between predictors.
+
+### $\color{blue}{\text{Answer 1.1 (a)}}$
+
+The histograms are used to visualize the distribution of each predictor and the correlation matrix plot to see the relationships between predictors.
+
+```{r 1-1a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+par(mfrow=c(3,3))
+# Histograms
+hist(Glass$RI, main="RI")
+hist(Glass$Na, main="Na")
+hist(Glass$Mg, main="Mg")
+hist(Glass$Al, main="Al")
+hist(Glass$Si, main="Si")
+hist(Glass$K, main="K")
+hist(Glass$Ca, main="Ca")
+hist(Glass$Ba, main="Ba")
+hist(Glass$Fe, main="Fe")
+
+
+```
+
+From the above histograms, we can see that some predictors are heavily skewed, such as $Mg$, $K$, $Ba$, and $Fe$. We will further confirm our visualizations about the skewness of each predictor in part (b). In addition, we use the correlation matrix to check the relationship between predictors shown below.
+
+```{r 1-1a2, echo=TRUE, warning=FALSE, message=FALSE}
+
+#Correlation plot
+Cor = round(cor(Glass[,1:9]), 4)
+library(corrplot)
+corrplot(Cor, order = "hclust")
+corrplot(Cor, method="number")
+
+highCorr <- findCorrelation(Cor, cutoff = .75)
+head(highCorr)
+
+
+```
+
+It can be observed that the predictors $Ca$ and $RI$ are highly correlated with a correlation value of 0.81. By using $findCorrelation$ in R, we found out that the predictor $Ca$ may be removed to reduce pair-wise correlation with a threshold of 0.75, as recommended by the textbook.
+
+
+#### $\color{green}{\text{Q 1.1b}}$
+
+(b) Do there appear to be any outliers in the data? Are any predictors skewed? Show all work !
+
+### $\color{blue}{\text{Answer 1.1 (b)}}$
+
+
+(b)	By drawing the boxplot of each predictor shown below, we can draw some conclusions as follows: (i) there are several predictors having a couple of potential outliers, such as $RI$, $Ca$, $Ba$ (ii) we also observe that several predictors are heavily skewed, such as $Mg$, $K$, $Ba$, and $Fe$, which matches the findings from the histogram. So, it should be beneficial to employ the data transformation technique to resolve the outlier issues in the predictors.
+
+```{r 1-b1, echo=TRUE, warning=FALSE, message=FALSE}
+# Boxplot
+par(mfrow=c(3,3)) 
+boxplot(Glass$RI, main="RI")
+boxplot(Glass$Na, main="Na")
+boxplot(Glass$Mg, main="Mg")
+boxplot(Glass$Al, main="Al")
+boxplot(Glass$Si, main="Si")
+boxplot(Glass$K, main="K")
+boxplot(Glass$Ca, main="Ca")
+boxplot(Glass$Ba, main="Ba")
+boxplot(Glass$Fe, main="Fe")
+
+
+```
+
+
+In addition, we calculated the skewness of each predictor in the following table. The value Skewness can be used as a guide to prioritize the transformation of the predictor. We here consider the predictor to be nearly symmetric if the value falls between -0.5 and 0.5, moderately skewed if the absolute value falls between 0.5 and 1, and heavily skewed, otherwise. 
+
+
+
+#### $\color{green}{\text{Q 1.1c}}$
+
+(c) Are there any relevant transformations of one or more predictors that might improve the classification model? Show all work !
+
+### $\color{blue}{\text{Answer 1.1 (c)}}$
+
+```{r 1-c, echo=TRUE, warning=FALSE, message=FALSE}
+# Skewness
+skewValue = apply(Glass[,1:9], 2, skewness)
+skewValue
+par(mfrow=c(1,2))
+hist(Glass$Ca, prob=T,main="Before Transformation")
+hist(1/Glass$Ca, prob=T,main="After Transformation")
+
+
+```
+
+We observe from this table that the data transformation techniques, such as the Box-Cox transformation, may be required to resolve skewness. 
+
+
+
+#### $\color{green}{\text{Q 1.1d}}$
+
+(d) Fit SVM model (You may refer to Chapter 4 material for details) using the following codes:
+
+### $\color{blue}{\text{Answer 1.1 (d)}}$
+
+```{r 1-d, echo=TRUE, warning=FALSE, message=FALSE}
+
+# SVM
+
+library(kernlab)
+set.seed(231)
+sigDist <- sigest(Type~ ., data = Glass, frac = 1)
+sigDist
+
+svmTuneGrid <- data.frame(sigma = as.vector(sigDist)[1], C = 2^(-2:10))
+svmTuneGrid
+
+set.seed(1056)
+svmFit <- train(Type~ .,
+data = Glass,
+method = "svmRadial",
+preProc = c("center", "scale"),
+tuneGrid = svmTuneGrid,
+trControl = trainControl(method = "repeatedcv",
+repeats = 5))
+
+svmFit
+
+plot(svmFit, scales = list(x = list(log = 2)))
+     
+
+```
+
+      
+      
+
+
+The above code is creating a **Radial SVM Classification** model and also perform $10-fold$ $CV$ on it **repeated 5 times** and tune it.
+
+The above diagram is a line plot of the average performance. The $scales$ argument is actually an argument to plot that converts the x-axis to $log-2$ units.
+  
+  
+  
+
