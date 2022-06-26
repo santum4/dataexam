@@ -1,0 +1,249 @@
+---
+title: "Exercise 3 R Markdown"
+author: "Santanu Mukherjee"
+date: "07/03/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(pls)
+library(lars)
+library(elasticnet)
+
+```
+
+## R Markdown
+
+
+### $\color{red}{\text{Question}}$
+
+Infrared (IR) spectroscopy technology is used to determine the chemical makeup of a substance. The theory of IR spectroscopy holds that unique molecular structures absorb IR frequencies differently. In practice a spectrometer fires a series of IR frequencies into a sample material, and the device measures the absorbance of the sample at each individual frequency. This series of measurements creates a spectrum profile which can then be used to determine the chemical makeup of the sample material. 
+   
+A Tecator Infratec Food and Feed Analyzer instrument was used to analyze 215 samples of meat across 100 frequencies. A sample of these frequency profiles is displayed in Fig. 6.20. In addition to an IR profile, analytical chemistry determined the percent content of water, fat, and protein for each sample. If we can establish a predictive relationship between IR spectrum and fat content, then food scientists could predict a sample’s fat content with IR instead of using analytical chemistry. This would provide costs savings, since analytical chemistry is a more expensive, time-consuming process
+
+
+
+#### $\color{green}{\text{a}}$
+
+Start R and use these commands to load the data
+
+### $\color{blue}{\text{Answer (a)}}$
+
+```{r a, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(caret)
+data(tecator)
+# use ?tecator to see more details
+
+```
+
+The matrix absorp contains the 100 absorbance values for the 215 samples, while matrix endpoints contains the percent of moisture, fat, and protein in columns 1–3, respectively.
+
+
+#### $\color{green}{\text{b}}$
+
+In this example the predictors are the measurements at the individual frequencies. Because the frequencies lie in a systematic order (850–1,050nm), the predictors have a high degree of correlation. Hence, the data lie in a smaller dimension than the total number of predictors (215). Use PCA to determine the effective dimension of these data. What is the effective dimension?
+
+### $\color{blue}{\text{Answer (b)}}$
+
+The function $prcomp$ is used for PCA.
+
+```{r b, echo=TRUE, warning=FALSE, message=FALSE}
+
+pca.b = prcomp(absorp, center = TRUE, scale = TRUE )
+
+# Determining percent of variance associated with each component
+
+pct.var = pca.b$sdev^2/sum(pca.b$sdev^2) * 100
+head(pct.var)
+
+```
+
+The $pct.var$ data shows that the first components accounts for almost 98% of the information in the data. So, reviewing this analysis, we can say that the true real dimensionality is much lower than the total number of predictors. But this is considering the linear combination of data. If we try to use non-linear combinations of the predictors, we might get a different result.
+
+
+
+#### $\color{green}{\text{c}}$
+
+Split the data into a training and a test set the response of the percentage of moisture, pre-process the data, and build each variety of models described in this chapter. For those models with tuning parameters, what are the optimal values of the tuning parameter(s)?
+
+### $\color{blue}{\text{Answer (c)}}$
+
+
+So, there are 3 endpoints and based on the question, we will model the percentage of moisture (first column). We will do the split of the dataset into 80% (train) and 20% (test), by using $createDataPartition$ function. We will also perform  10-fold Cross validation (CV) with 5 repeats to tune the models.
+
+
+
+```{r c1, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(10)
+train.part = createDataPartition(endpoints[,1], p = 0.8, list=FALSE)
+absorp = data.frame(absorp)
+
+absorp.train = absorp[train.part,]
+absorp.test = absorp[-train.part,]
+moisture.train = endpoints[train.part,1]
+moisture.test = endpoints[-train.part,1]
+
+cntrl = trainControl(method = "repeatedcv", repeats = 5)
+
+```
+
+```{r c2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Build various models and then compare performance:
+
+# Simple Linear Model
+set.seed(15)
+lm.model = train( absorp.train, moisture.train, method="lm", preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+lm.model
+
+```
+
+
+```{r c3, echo=TRUE, warning=FALSE, message=FALSE}
+
+# For Robust Linear Model (rlm) we cannot have a singular predictor covariance matrix thus we preprocess with PCA:
+# 
+set.seed(0)
+rlm.model = train( absorp.train, moisture.train, method="rlm", preProcess=c("pca"), trControl=trainControl(method="repeatedcv",repeats=5) )
+rlm.model
+
+```
+
+
+
+```{r c4, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Ridge regression model
+#
+ridgeGrid = data.frame(.lambda=seq(0,1,length=20))
+set.seed(0)
+ridge.model = train( absorp.train, moisture.train, method="ridge",
+                         # fit the model over many penalty values
+                         tuneGrid = ridgeGrid,
+                         preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+ridge.model
+
+```
+
+
+```{r c5, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Elastic net model
+# 
+enetGrid = expand.grid(.lambda=seq(0,1,length=20), .fraction=seq(0.05, 1.0, length=20))
+set.seed(0)
+enet.model = train( absorp.train, moisture.train, method="enet",
+                    # fit the model over many penalty values
+                    tuneGrid = enetGrid,
+                    preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+
+enet.model
+
+```
+
+
+```{r c6, echo=TRUE, warning=FALSE, message=FALSE}
+
+resamp = resamples(list(lm=lm.model,rlm=rlm.model,ridge=ridge.model,enet=enet.model) )
+print( summary(resamp) )
+print( summary(diff(resamp)) )
+
+
+
+```
+
+
+So, the different models that I have tried are **Simple Linear Regression**, **Robust Linear Regression**, **Ridge Regression** and **Elastic Net**.
+The models **Ridge Regression** and **Elastic Net* have tuning parameters. 
+For **Ridge Regression**, the optimal value for the tuning parameter ($\lambda$) is $0$, $RMSE$ is the lowest $3.246823$, $R-squared$ is the highest $0.8836765$.
+   
+For **Elastic Net*, the optimal values for $fraction$ = $0.05$ and $\lambda$ = $0$, $RMSE$ is the lowest $1.816646$, $R-squared$ is the highest $0.9664863$.
+
+
+
+
+
+#### $\color{green}{\text{d}}$
+
+Which model has the best predictive ability? Is any model significantly better or worse than the others? 
+
+### $\color{blue}{\text{Answer (d)}}$
+
+
+
+
+```{r d, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Prediction for Simple Linear Model and MSE
+
+MSE.lm.test <- mean((predict(lm.model, data=absorp.test) - moisture.test)^2)
+MSE.lm.test
+RMSE.lm.test = sqrt(MSE.lm.test)
+RMSE.lm.test
+
+# Prediction for Robust Linear Regression Model and MSE
+
+MSE.rlm.test <- mean((predict(rlm.model, data=absorp.test) - moisture.test)^2)
+MSE.rlm.test
+RMSE.rlm.test = sqrt(MSE.rlm.test)
+RMSE.rlm.test
+
+
+
+# Prediction for Ridge Regression Model and RMSE
+
+MSE.ridge.test <- mean((predict(ridge.model, data=absorp.test) - moisture.test)^2)
+MSE.ridge.test
+RMSE.ridge.test = sqrt(MSE.ridge.test)
+RMSE.ridge.test
+
+
+# Prediction for Elastic Net Model and RMSE
+
+MSE.enet.test <- mean((predict(enet.model, data=absorp.test) - moisture.test)^2)
+MSE.enet.test
+RMSE.enet.test = sqrt(MSE.enet.test)
+RMSE.enet.test
+
+
+```
+
+
+Based on the results of the predictions, **Ridge Regression Model** has the lowest MSE of $11.865$ and so this is the best model.
+
+
+
+#### $\color{green}{\text{e}}$
+
+Explain which model you would use for predicting the percentage of moisture of a sample.
+
+### $\color{blue}{\text{Answer (e)}}$
+
+Based on the results obtained, I would use the **Ridge Regression Model** for predicting the moisture of a sample as we got the lowest $MSE$ for that model. 
+
+
+
