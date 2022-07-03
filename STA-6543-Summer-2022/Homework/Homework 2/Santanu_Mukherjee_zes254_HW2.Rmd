@@ -1,0 +1,601 @@
+---
+title: "Santanu_Mukherjee_zes254_HW2"
+author: "Santanu Mukherjee, zes254"
+date: "07/03/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(pls)
+library(lars)
+library(elasticnet)
+
+```
+
+## R Markdown
+
+
+### Chapter 6 - E-Book - Applied Predictive Modelling - Chapter 6 - Exercises pages 137 - 138:
+
+### $\color{red}{\text{Q 6.1}}$
+
+Infrared (IR) spectroscopy technology is used to determine the chemical makeup of a substance. The theory of IR spectroscopy holds that unique molecular structures absorb IR frequencies differently. In practice a spectrometer fires a series of IR frequencies into a sample material, and the device measures the absorbance of the sample at each individual frequency. This series of measurements creates a spectrum profile which can then be used to determine the chemical makeup of the sample material. 
+   
+A Tecator Infratec Food and Feed Analyzer instrument was used to analyze 215 samples of meat across 100 frequencies. A sample of these frequency profiles is displayed in Fig. 6.20. In addition to an IR profile, analytical chemistry determined the percent content of water, fat, and protein for each sample. If we can establish a predictive relationship between IR spectrum and fat content, then food scientists could predict a sample’s fat content with IR instead of using analytical chemistry. This would provide costs savings, since analytical chemistry is a more expensive, time-consuming process
+
+
+
+#### $\color{green}{\text{6.1 a}}$
+
+Start R and use these commands to load the data
+
+### $\color{blue}{\text{Answer (6.1 a)}}$
+
+```{r 6-1a, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(caret)
+data(tecator)
+# use ?tecator to see more details
+
+```
+
+The matrix absorp contains the 100 absorbance values for the 215 samples, while matrix endpoints contains the percent of moisture, fat, and protein in columns 1–3, respectively.
+
+
+#### $\color{green}{\text{6.1 b}}$
+
+In this example the predictors are the measurements at the individual frequencies. Because the frequencies lie in a systematic order (850–1,050nm), the predictors have a high degree of correlation. Hence, the data lie in a smaller dimension than the total number of predictors (215). Use PCA to determine the effective dimension of these data. What is the effective dimension?
+
+### $\color{blue}{\text{Answer (6.1 b)}}$
+
+The function $prcomp$ is used for PCA.
+
+```{r 6-1b, echo=TRUE, warning=FALSE, message=FALSE}
+
+pca.b = prcomp(absorp, center = TRUE, scale = TRUE )
+
+# Determining percent of variance associated with each component
+
+pct.var = pca.b$sdev^2/sum(pca.b$sdev^2) * 100
+head(pct.var)
+
+```
+
+The $pct.var$ data shows that the first components accounts for almost 99% of the information in the data. So, reviewing this analysis, we can say that the true real dimensionality is much lower than the total number of predictors. But this is considering the linear combination of data. If we try to use non-linear combinations of the predictors, we might get a different result.
+
+
+
+#### $\color{green}{\text{6.1 c}}$
+
+Split the data into a training and a test set the response of the percentage of protein, pre-process the data, and build each variety of models described in this chapter. For those models with tuning parameters, what are the optimal values of the tuning parameter(s)?
+
+### $\color{blue}{\text{Answer (6.1 c)}}$
+
+
+So, there are 3 endpoints and based on the question, we will model the percentage of protein (third column). We will do the split of the dataset into 80% (train) and 20% (test), by using $createDataPartition$ function. We will also perform  10-fold Cross validation (CV) with 5 repeats to tune the models.
+
+
+
+```{r 6-1c1, echo=TRUE, warning=FALSE, message=FALSE}
+
+set.seed(10)
+train.part = createDataPartition(endpoints[,3], p = 0.8, list=FALSE)
+absorp = data.frame(absorp)
+
+absorp.train = absorp[train.part,]
+absorp.test = absorp[-train.part,]
+protein.train = endpoints[train.part,3]
+protein.test = endpoints[-train.part,3]
+
+cntrl = trainControl(method = "repeatedcv", repeats = 5)
+
+```
+
+```{r 6-1c2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Build various models and then compare performance:
+
+# Simple Linear Model
+set.seed(15)
+lm.model = train( absorp.train, protein.train, method="lm", preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+lm.model
+
+```
+
+
+```{r 6-1c3, echo=TRUE, warning=FALSE, message=FALSE}
+
+# For Robust Linear Model (rlm) we cannot have a singular predictor covariance matrix thus we preprocess with PCA:
+# 
+set.seed(0)
+rlm.model = train( absorp.train, protein.train, method="rlm", preProcess=c("pca"), trControl=trainControl(method="repeatedcv",repeats=5) )
+rlm.model
+
+```
+
+
+
+```{r 6-1c4, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Ridge regression model
+#
+ridgeGrid = data.frame(.lambda=seq(0,1,length=20))
+set.seed(0)
+ridge.model = train( absorp.train, protein.train, method="ridge",
+                         # fit the model over many penalty values
+                         tuneGrid = ridgeGrid,
+                         preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+ridge.model
+
+```
+
+
+```{r 6-1c5, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Elastic net model
+# 
+enetGrid = expand.grid(.lambda=seq(0,1,length=20), .fraction=seq(0.05, 1.0, length=20))
+set.seed(0)
+enet.model = train( absorp.train, protein.train, method="enet",
+                    # fit the model over many penalty values
+                    tuneGrid = enetGrid,
+                    preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+
+enet.model
+
+```
+
+
+```{r 6-1c6, echo=TRUE, warning=FALSE, message=FALSE}
+
+resamp = resamples(list(lm=lm.model,rlm=rlm.model,ridge=ridge.model,enet=enet.model) )
+print( summary(resamp) )
+print( summary(diff(resamp)) )
+
+
+
+```
+
+
+So, the different models that I have tried are **Simple Linear Regression**, **Robust Linear Regression**, **Ridge Regression** and **Elastic Net**.
+The models **Ridge Regression** and **Elastic Net* have tuning parameters. 
+For **Ridge Regression**, the optimal value for the tuning parameter ($\lambda$) is $0$, $RMSE$ is the lowest $1.193874$, $R-squared$ is the highest $0.8476045$.
+   
+For **Elastic Net*, the optimal values for $fraction$ = $0.05$ and $\lambda$ = $0$, $RMSE$ is the lowest $0.7762276$, $R-squared$ is the highest $0.9298649$.
+
+
+
+
+
+#### $\color{green}{\text{6.1 d}}$
+
+Which model has the best predictive ability? Is any model significantly better or worse than the others? 
+
+### $\color{blue}{\text{Answer (6.1 d)}}$
+
+
+
+
+```{r 6-1d, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Prediction for Simple Linear Model and MSE
+
+MSE.lm.test <- mean((predict(lm.model, data=absorp.test) - protein.test)^2)
+MSE.lm.test
+RMSE.lm.test = sqrt(MSE.lm.test)
+RMSE.lm.test
+
+# Prediction for Robust Linear Regression Model and MSE
+
+MSE.rlm.test <- mean((predict(rlm.model, data=absorp.test) - protein.test)^2)
+MSE.rlm.test
+RMSE.rlm.test = sqrt(MSE.rlm.test)
+RMSE.rlm.test
+
+
+
+# Prediction for Ridge Regression Model and RMSE
+
+MSE.ridge.test <- mean((predict(ridge.model, data=absorp.test) - protein.test)^2)
+MSE.ridge.test
+RMSE.ridge.test = sqrt(MSE.ridge.test)
+RMSE.ridge.test
+
+
+# Prediction for Elastic Net Model and RMSE
+
+MSE.enet.test <- mean((predict(enet.model, data=absorp.test) - protein.test)^2)
+MSE.enet.test
+RMSE.enet.test = sqrt(MSE.enet.test)
+RMSE.enet.test
+
+
+```
+
+
+Based on the results of the predictions, **Robust Linear Regression Model** has the lowest MSE of $11.4929$ and so this is the model that is a best fit.
+
+
+
+#### $\color{green}{\text{6.1 e}}$
+
+Explain which model you would use for predicting the percentage of protein of a sample.
+
+### $\color{blue}{\text{Answer (6.1 e)}}$
+
+Based on the results obtained, I would use the **Robust Linear Regression Model** for predicting the protein of a sample as we got the lowest $MSE$ for that model. 
+
+
+
+
+### $\color{red}{\text{Q 6.2}}$
+
+
+Developing a model to predict permeability (see Sect. 1.4) could save significant resources for a pharmaceutical company, while at the same time more rapidly identifying molecules that have a sufficient permeability to become a drug:
+
+
+
+#### $\color{green}{\text{6.2 a}}$
+
+Start R and use these commands to load the data
+
+### $\color{blue}{\text{Answer (6.2 a)}}$
+
+
+```{r 6-2a, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(AppliedPredictiveModeling)
+data(permeability)
+
+```
+
+The matrix **fingerprints** contains the 1,107 binary molecular predictors for the 165 compounds, while **permeability** contains permeability response.
+
+
+#### $\color{green}{\text{6.2 b}}$
+
+The fingerprint predictors indicate the presence or absence of substructures of a molecule and are often sparse meaning that relatively few of the molecules contain each substructure. Filter out the predictors that have low frequencies using the $nearZeroVar$ function from the caret package.How many predictors are left for modeling?
+
+### $\color{blue}{\text{Answer (6.2 b)}}$
+
+
+```{r 6-2b, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Number of predictors in fingerprints before non-zero variance
+
+print(str(fingerprints))
+cat("Before Non-Zero Variance, number of predictors in fingerprints is 1107: \n")
+
+# Number of predictors in fingerprints after non-zero variance
+
+NZVfingerprints <- nearZeroVar(fingerprints)
+noNZVfingerprints <- fingerprints[,-NZVfingerprints]
+print(str(NZVfingerprints))
+print(str(noNZVfingerprints))
+cat("After Non-Zero Variance, number of predictors in fingerprints is 388: \n")
+
+```
+
+So, we find from above that there are in total 1107 predictors. Out of these, there are **719** near-zero variance fingerprints, which means that there are **388** predictors that are left for modeling. This means that around **35%** of the total predictors are left for modelling and this is a significant reduction from the original matrix. This is also an indication of the fact that many fingerprints are describing unique features of very small subsets. 
+ 
+Now, because this data set has small number of samples in comparison to predictors $(n=165,$ $p=388)$, we think that a **75% training** and **25% test** $split$ is ideal to evaluate model performance.
+
+
+
+#### $\color{green}{\text{6.2 c}}$
+
+Split the data into a training and a test set, pre-process the data, and tune a $PLS$ model. How many latent variables are optimal and what is the corresponding re sampled estimate of $R^2$?
+
+### $\color{blue}{\text{Answer (6.2 c)}}$
+
+
+```{r 6-2c, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Splitting data into 75% training and 25% test dataset
+
+
+set.seed(123)
+trainRows =  createDataPartition(permeability, p = .75, list= FALSE)
+
+trainFingerprints <- noNZVfingerprints[trainRows,]
+trainPermeability <- permeability[trainRows,]
+
+testFingerprints <- noNZVfingerprints[-trainRows,]
+testPermeability <- permeability[-trainRows,]
+
+set.seed(123)
+
+ctrl <- trainControl(method = "repeatedcv", repeats=5, number = 10)
+
+
+
+# PLS Model
+
+pls.model <- train(x = trainFingerprints , y = trainPermeability,preProcess = c("center","scale"), method = "pls", tuneGrid = expand.grid(ncomp = 1:20), trControl = ctrl)
+print(pls.model)
+plot(pls.model, metric ="Rsquared", main = "PLS Tuning Parameter - Permeability Data")
+
+
+
+```
+
+Based on the outcome of the $PLS$ model, we find out that the optimal value of $ncomp$ commonly known as latent variables is $2$. The corresponding $R^2$ is the highest and is $0.4578040$  
+
+
+#### $\color{green}{\text{6.2 d}}$
+
+Predict the response for the test set. What is the test set estimate of $R^2$?
+
+### $\color{blue}{\text{Answer (6.2 d)}}$
+
+
+
+```{r 6-2d, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Prediction performance using PLS based on the test set
+
+pred.pls = predict( pls.model, newdata=testFingerprints )
+rsq.pls = cor(pred.pls,testPermeability,method="pearson")^2
+rmse.pls = sqrt( mean( (pred.pls - testPermeability)^2 ) )
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "PLS", rsq.pls, rmse.pls ) )
+
+
+```
+
+
+
+#### $\color{green}{\text{6.2 e}}$
+
+Try building other models discussed in this chapter. Do any have better predictive performance?
+
+### $\color{blue}{\text{Answer (6.2 e)}}$
+
+
+
+```{r 6-2e, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Elastic Net 
+
+
+enetGrid = expand.grid(.lambda=seq(0,1,length=20), .fraction=seq(0.05, 1.0, length=20))
+set.seed(0)
+enet.model = train( trainFingerprints, trainPermeability, method="enet",
+                    # fit the model over many penalty values
+                    tuneGrid = enetGrid,
+                    preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+pred.enet = predict( enet.model, newdata=testFingerprints )
+rsq.enet = cor(pred.enet,testPermeability,method="pearson")^2
+rmse.enet = sqrt( mean( (pred.enet - testPermeability)^2 ) )
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "ENET", rsq.enet, rmse.enet ) )
+
+
+
+# Linear Regression Model
+
+set.seed(0)
+lm.model = train( trainFingerprints, trainPermeability, method="lm", preProcess=c("center","scale"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+pred.lm = predict( lm.model, newdata=testFingerprints )
+rsq.lm = cor(pred.lm,testPermeability,method="pearson")^2
+rmse.lm = sqrt( mean( (pred.lm - testPermeability)^2 ) )
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "LM", rsq.lm, rmse.lm ) )
+
+
+
+
+# Robust Linear Regression. For RLM, we cannot have a singular predictor covariance matrix and so we preprocess with PCA:
+# 
+set.seed(0)
+rlm.model = train( trainFingerprints, trainPermeability, method="rlm", preProcess=c("pca"), trControl=trainControl(method="repeatedcv",repeats=5) )
+
+pred.rlm = predict( rlm.model, newdata=testFingerprints )
+rsq.rlm = cor(pred.rlm,testPermeability,method="pearson")^2
+rmse.rlm = sqrt( mean( (pred.rlm - testPermeability)^2 ) )
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "RLM", rsq.rlm, rmse.rlm ) )
+
+
+
+# Comparison of the above models using re samples
+
+resamp = resamples( list(pls=pls.model,lm=lm.model, rlm=rlm.model, enet = enet.model) ) 
+print( summary(resamp) )
+
+
+dotplot( resamp, metric="Rsquared" )
+
+print( summary(diff(resamp)) )
+
+
+
+
+```
+
+
+
+#### $\color{green}{\text{6.2 f}}$
+
+Would you recommend any of your models to replace the permeability laboratory experiment?
+
+### $\color{blue}{\text{Answer (6.2 f)}}$
+
+Yes, I would recommend using **Elastic Net** model as it gives me the **highest** $R^2$
+
+
+
+
+### Chapter 7 - E-Book - Applied Predictive Modelling - Exercises pages 170-171:
+
+### $\color{red}{\text{Q 7.4}}$
+
+
+Return to the permeability problem outlined in **Exercise 6.2**. Train several nonlinear regression models and evaluate the re sampling and test set performance.
+
+```{r 7.4.1, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+set.seed(0)
+trainRows =  createDataPartition(permeability, p = .75)
+
+trainFingerprints <- noNZVfingerprints[trainRows$Resample1,]
+trainPermeability <- permeability[trainRows$Resample1,]
+
+testFingerprints <- noNZVfingerprints[-trainRows$Resample1,]
+testPermeability <- permeability[-trainRows$Resample1,]
+
+
+```
+
+
+
+```{r 7.4.2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# A K-NN model 
+
+
+set.seed(0)
+knn.model = train(x=trainFingerprints, y=trainPermeability, method="knn", preProcess=c("center","scale"), tuneLength=10)
+
+# Prediction on testing dataset
+
+pred.knn = predict(knn.model, newdata=testFingerprints)
+pr.knn = postResample(pred=pred.knn, obs=testPermeability)
+rmse.knn = c(pr.knn[1])
+rsq.knn = c(pr.knn[2])
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "KNN", rsq.knn, rmse.knn ) )
+
+
+
+
+# Neural Network model:
+
+nnGrid = expand.grid( .decay=c(0,0.01,0.1), .size=1:10, .bag=FALSE )
+set.seed(0)
+nnet.model = train(x=trainFingerprints, y=trainPermeability, method="nnet", preProcess=c("center","scale"),
+                  linout=TRUE,trace=FALSE,MaxNWts=10 * (ncol(trainFingerprints)+1) + 10 + 1, maxit=500)
+
+
+# Prediction on testing dataset
+
+pred.nnet = predict(nnet.model, newdata=testFingerprints)
+pr.nnet = postResample(pred=pred.nnet, obs=testPermeability)
+rmse.nnet = c(pr.nnet[1])
+rsq.nnet = c(pr.nnet[2])
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "Neural Net", rsq.nnet, rmse.nnet ) )
+
+
+# MARS model:
+
+marsGrid = expand.grid(.degree=1:2, .nprune=2:38)
+set.seed(0)
+mars.model = train(x=trainFingerprints, y=trainPermeability, method="earth", preProcess=c("center","scale"), tuneGrid=marsGrid)
+
+
+# Prediction on testing dataset
+
+pred.mars = predict(mars.model, newdata=testFingerprints)
+pr.mars = postResample(pred=pred.mars, obs=testPermeability)
+rmse.mars = c(pr.mars[1])
+rsq.mars = c(pr.mars[2])
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "MARS", rsq.mars, rmse.mars ) )
+
+
+
+# A Support Vector Machine (SVM):
+
+set.seed(0)
+svm.model = train(x=trainFingerprints, y=trainPermeability, method="svmRadial", preProcess=c("center","scale"), tuneLength=20)
+
+
+# Prediction on testing dataset
+
+pred.svm = predict(svm.model, newdata=testFingerprints)
+pr.svm = postResample(pred=pred.svm, obs=testPermeability)
+rmse.svm = c(pr.svm[1])
+rsq.svm = c(pr.svm[2])
+print( sprintf( "%-10s: Testing R-square = %10.6f; RMSE= %10.6f", "SVM Radial", rsq.svm, rmse.svm ) )
+                  
+
+# Comparison of the above models using re samples
+
+resamp = resamples( list(svm=svm.model,knn=knn.model,nnet=nnet.model,mars=mars.model) )
+print( summary(resamp) )
+
+dotplot( resamp, metric="Rsquared" )
+
+print( summary(diff(resamp)) )
+
+
+```
+
+
+
+#### $\color{green}{\text{7.4 a}}$
+
+Which nonlinear regression model gives the optimal re sampling and test set performance?
+
+
+### $\color{blue}{\text{Answer (7.4 a)}}$
+
+Based on the outcomes above, **Support Vector Machine (SVM)** provides the optimal re sampling and test performance.
+
+
+
+#### $\color{green}{\text{7.4 b}}$
+
+Do any of the nonlinear models outperform the optimal linear model you previously developed in **Exercise 6.2**? If so, what might this tell you about the underlying relationship between the predictors and the response?
+
+
+### $\color{blue}{\text{Answer (7.4 b)}}$
+
+
+Yes, **Support Vector Machine (SVM)** does outperform the other linear models , because of all these models the $RMSE$ is **least**.  
+
+
+#### $\color{green}{\text{7.4 c}}$
+
+Would you recommend any of the models you have developed to replace the permeability laboratory experiment?
+
+
+### $\color{blue}{\text{Answer (7.4 c)}}$
+
+I would recommend using **Support Vector Machine (SVM)** model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
