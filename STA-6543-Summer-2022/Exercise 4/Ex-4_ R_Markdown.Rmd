@@ -1,0 +1,206 @@
+---
+title: "Exercise 4 R Markdown"
+author: "Santanu Mukherjee"
+date: "07/23/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(pls)
+library(lars)
+library(elasticnet)
+
+```
+
+## R Markdown
+
+
+### $\color{red}{\text{7.2}}$
+
+7.2. **Friedman (1991)** introduced several benchmark data sets create by simulation.One of these simulations used the following nonlinear equation to create data:
+  
+y = 10 sin($\pi$$x_{1}$$x_{2}$) + 20$(x_{3} − 0.5)^2$ + 10$x_{4}$ + 5$x_{5}$ + $N$(0, $\sigma^2$)
+  
+where the x values are random variables uniformly distributed between [0, 1] (there are also 5 other non-informative variables also created in the simulation). The package **mlbench** contains a function called **mlbench.friedman1** that simulates these data:
+
+
+Which models appear to give the best performance? Does MARS select the informative predictors (those named X1–X5)?
+
+
+```{r 7-2, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(mlbench)
+set.seed(200)
+trainingData <- mlbench.friedman1(200, sd = 1)
+
+## We convert the 'x' data from a matrix to a data frame
+## One reason is that this will give the columns names.
+
+trainingData$x <- data.frame(trainingData$x)
+
+## Look at the data using
+
+featurePlot(trainingData$x, trainingData$y)
+
+## or other methods.
+
+## This creates a list with a vector 'y' and a matrix
+## of predictors 'x'. Also simulate a large test set to
+## estimate the true error rate with good precision:
+
+testData <- mlbench.friedman1(5000, sd = 1)
+testData$x <- data.frame(testData$x)
+
+
+```
+
+Tune several models on these data. For example:
+
+#### $\color{blue}{\text{KNN Model}}$
+
+```{r 7-2-1, echo=TRUE, warning=FALSE, message=FALSE}
+
+library(caret)
+knnModel <- train(x = trainingData$x, y = trainingData$y, method = "knn", preProc = c("center", "scale"), tuneLength = 10)
+knnModel
+
+
+```
+
+
+```{r 7-2-1a, echo=TRUE, warning=FALSE, message=FALSE}
+
+knnPred <- predict(knnModel, newdata = testData$x)
+
+## The function 'postResample' can be used to get the test set
+## performance values
+
+postResample(pred = knnPred, obs = testData$y)
+
+knnPR = postResample(pred=knnPred, obs=testData$y)
+rmses = c(knnPR[1])
+r2s = c(knnPR[2])
+methods = c("KNN")
+
+```
+
+
+#### $\color{blue}{\text{Neural Net (NN) Model}}$
+
+
+```{r 7-2-2a, echo=TRUE, warning=FALSE, message=FALSE}
+
+#
+nn.grid = expand.grid( .decay=c(0,0.01,0.1), .size=1:10, .bag=FALSE )
+set.seed(0)
+nnet.model = train(x=trainingData$x, y=trainingData$y, method="nnet", preProc=c("center", "scale"),
+                  linout=TRUE,trace=FALSE,MaxNWts=10 * (ncol(trainingData$x)+1) + 10 + 1, maxit=500)
+
+nnet.pred = predict(nnet.model, newdata=testData$x)
+nnet.pr = postResample(pred=nnet.pred, obs=testData$y)
+rmses = c(rmses,nnet.pr[1])
+r2s = c(r2s,nnet.pr[2])
+methods = c(methods,"NN")
+
+```
+
+
+#### $\color{blue}{\text{MARS (Multivariate Adaptive Regression Splines) Model}}$
+
+
+```{r 7-2-3a, echo=TRUE, warning=FALSE, message=FALSE}
+
+#
+mars.grid = expand.grid(.degree=1:2, .nprune=2:38)
+set.seed(0)
+mars.model = train(x=trainingData$x, y=trainingData$y, method="earth", preProc=c("center", "scale"), tuneGrid=mars.grid)
+      
+mars.pred = predict(mars.model, newdata=testData$x)
+marsPR = postResample(pred=mars.pred, obs=testData$y)
+rmses = c(rmses,marsPR[1])
+r2s = c(r2s,marsPR[2])
+methods = c(methods,"MARS")
+
+
+```
+
+
+
+#### $\color{blue}{\text{Support Vector Machine }}$
+
+
+```{r 7-2-4a, echo=TRUE, warning=FALSE, message=FALSE}
+
+#
+set.seed(0)
+svm.model = train(x=trainingData$x, y=trainingData$y, method="svmRadial", preProc=c("center", "scale"), tuneLength=20)
+
+svm.pred = predict(svm.model, newdata=testData$x)
+svmPR = postResample(pred=svm.pred, obs=testData$y) 
+rmses = c(rmses,svmPR[1])
+r2s = c(r2s,svmPR[2])
+methods = c(methods,"SVM")
+
+```
+
+
+
+
+
+#### $\color{green}{\text{Final results from all the models}}$
+
+
+```{r 7-2-final, echo=TRUE, warning=FALSE, message=FALSE}
+
+#
+res = data.frame( rmse=rmses, r2=r2s )
+rownames(res) = methods
+
+# Order the dataframe so that the best results are at the bottom:
+#
+res = res[ order( -res$rmse ), ]
+print( "Final Results from all the models" ) 
+print( res )
+
+
+
+```
+
+
+After tuning several models, **MARS model** appear to give the best performance with the **highest** $R^2$ and **lowest** $RMSE$.  
+
+#### $\color{green}{\text{Variable importance for MARS Model}}$
+
+```{r 7-2-MARS-data, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Lets see what variables are most important for MARS model: 
+varImp(mars.model)
+
+
+```
+
+
+  
+**The above table shows the importance of the variables (from the most important to the least important) for MARS model.**  
+
+
