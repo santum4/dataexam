@@ -1,0 +1,267 @@
+---
+title: "Exercise 5 R Markdown"
+author: "Santanu Mukherjee" 
+date: "07/26/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(pls)
+
+```
+
+## R Markdown
+
+
+### $\color{red}{\text{Question}}$
+
+
+This question should be answered using the *“Weekly”* data set, which is part of the **“ISLR”** package. This data is similar in nature to the *“Smarket”* data from this chapter’s lab, except that it contains $1089$ weekly returns for $21$ years, from the beginning of $1990$ to the end of $2010$.
+
+#### $\color{red}{\text{Question a}}$   
+
+(a) Produce some numerical and graphical summaries of the *“Weekly”* data. Do there appear to be any patterns ?
+
+### $\color{blue}{\text{Answer a}}$
+
+
+```{r 10a, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (a) Weekly Data Summary
+library(ISLR)
+summary(Weekly)
+pairs(Weekly)
+pairs(Weekly[,-9])
+cor(Weekly[, -9])
+attach(Weekly)
+plot(Volume, col="green")
+
+```
+
+Step by Step Observations:    
+**1.** The *Summary* and subsequently the *pairs *showed that the variable "Direction" was insignificant.    
+**2.** So, then I got the correlation matrix with all variables except **Direction**.   
+**3.** The correlations between the **“lag”** variables and **Today* variable are close to zero.     
+**4.** The correlation between variables **“Year”** and **“Volume”** is the only significant one.     
+**5.** So, I have done plot “Volume”, and I see that is increasing over time.   
+
+
+#### $\color{red}{\text{Question b}}$   
+
+(b) Use the full data set to perform a logistic regression with *“Direction”* as the response and the five lag variables plus *“Volume”* as predictors. Use the summary function to print the results. Do any of the predictors appear to be statistically significant ? If so, which ones ?
+
+### $\color{blue}{\text{Answer b}}$
+
+
+```{r 10b, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (b) Logistic Regression
+
+set.seed(1)
+log.reg <-glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume, data=Weekly,family=binomial)
+summary(log.reg)
+
+```
+
+It seems that “Lag2” is the only predictor which is statistically significant at $\alpha = 0.05$ as its p-value is less than 0.05.
+
+
+#### $\color{red}{\text{Question c}}$   
+
+(c) Compute the confusion matrix and overall fraction of correct predictions. Explain what the confusion matrix is telling you about the types of mistakes made by logistic regression.
+
+### $\color{blue}{\text{Answer c}}$
+
+```{r 10c, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (c) Confusion Matrix
+
+prob.log.reg <- predict(log.reg, type = "response")
+pred.log.reg <- rep("Down", length(prob.log.reg))
+pred.log.reg[prob.log.reg > 0.5] <- "Up"
+table(pred.log.reg, Direction)
+
+```
+
+Based on the results of the table above, We may conclude that the percentage of correct predictions (Down * Down & Up *Up) on the training data is $(54+557)/1089$ which is equal to $56.11$%. So, we can say that $43.89$% is the training error rate.     
+
+If we look at the data from another angle , meaning we could also conclude that for the *weeks* when the market goes **Up**, the model is right $92.07$% of the time $(557/(48+557))$.    
+Similarly, for the *weeks* when the market goes **Down**, the model is right only $11.16$% of the time $(54/(54+430))$.
+
+
+
+
+#### $\color{red}{\text{Question d}}$   
+
+(d) Now fit the logistic regression model using a training data period from $1990$ to $2008$. Compute the confusion matrix and the overall fraction of correct predictions for the held out data (that is, the data from $2009 to 2010$).
+
+### $\color{blue}{\text{Answer d}}$
+
+```{r 10d1, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (d) Logistic regression with data from 2009-2010 and the only predictor being "Lag2"
+
+train.data <- (Year < 2009)
+Weekly.2009.2010 <- Weekly[!train.data, ]
+Direction.2009.2010 <- Direction[!train.data]
+log.reg.lag2 <- glm(Direction ~., data = Weekly, family = binomial, subset = train.data)
+summary(log.reg.lag2)
+
+```
+
+```{r 10d2, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (d) Confusion Matrix 
+
+prob2.log.reg <- predict(log.reg.lag2, Weekly.2009.2010, type = "response")
+pred2.log.reg <- rep("Down", length(prob2.log.reg))
+pred2.log.reg[prob2.log.reg > 0.5] <- "Up"
+table(pred2.log.reg, Direction.2009.2010)
+
+```
+
+Based on the results of the table above, we can conclude that the percentage of correct predictions on the test data is $(43+61)/104$ (Down * Down & Up * Up) which is equal to $100$%. So, we can say that the test error rate is $0$%.    
+
+If we look at the data from another angle , meaning we could also conclude that for the *weeks* when the market goes **Up** or **Down**, the model is correct $100$% of the time. 
+
+
+
+#### $\color{red}{\text{Question e}}$   
+
+(e) Repeat (d) using $LDA$.
+
+### $\color{blue}{\text{Answer e}}$
+
+```{r 10e1, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (e) 1st part - Repeating part (d) using LDA
+
+library(MASS)
+fit.lda <- lda(Direction ~., data = Weekly, subset = train.data)
+fit.lda
+
+```
+
+
+```{r 10e2, echo=TRUE, warning=FALSE, message=FALSE}
+##Part (e) 2nd part - Repeating part (d) using LDA
+
+pred.e.lda <- predict(fit.lda, Weekly.2009.2010)
+table(pred.e.lda$class, Direction.2009.2010)
+
+```
+
+Based on the results, we conclude that the output is similar but not exactly the same as part (d), which means in this case, the **Logistic Regression** and **LDA** has different results.
+
+From the results of the table above, we can conclude that the percentage of correct predictions on the test data is $(36+61)/104$ (Down * Down & Up * Up) which is equal to $93.2$%. So, we can say that the test error rate for LDA is $6.8$%. 
+
+
+#### $\color{red}{\text{Question f}}$   
+
+(f) Repeat (d) using Partial least squares discriminant analysis. 
+
+### $\color{blue}{\text{Answer f}}$
+
+
+```{r 10f1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Implementing PLS using plsr() function
+
+set.seed(1)
+fit.pls <- plsr(as.numeric(Direction) ~ ., data = Weekly, subset = train.data, scale=TRUE, validation="CV")
+summary(fit.pls)
+
+validationplot(fit.pls ,val.type="RMSEP")
+
+```
+
+
+```{r 10f2, echo=TRUE, warning=FALSE, message=FALSE}
+
+pred.e.pls <- predict(fit.pls, Weekly.2009.2010, ncomp=2)
+table(pred.e.pls, Direction.2009.2010)
+mean((pred.e.pls - as.numeric(Weekly.2009.2010$Direction))^2)
+
+```
+
+The test error rate for PLS for ncomp = 2 is 11% 
+
+
+
+#### $\color{red}{\text{Question g}}$   
+
+(g) Repeat (d) using Nearest Shrunken Centroids.
+
+### $\color{blue}{\text{Answer g}}$
+
+
+
+```{r 10g1-1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Implementing Nearest Shrunken Centroids using pamr function
+
+library(pamr)
+
+ctrl <- trainControl(summaryFunction = twoClassSummary, classProbs = TRUE, savePredictions = TRUE)
+
+nscGrid <- data.frame(.threshold = 0:25)
+nscTune <- train(x = as.matrix(Weekly[,1:8]),
+ y = Weekly$Direction,
+method = "pam",
+ preProc = c("center", "scale"),
+ tuneGrid = nscGrid,
+ metric = "ROC",
+trControl = ctrl)
+
+nscTune
+plot(nscTune)
+
+#variale importance 
+plot(varImp(nscTune, scale =FALSE))
+
+
+
+
+
+```
+
+
+
+
+```{r 10g2, echo=TRUE, warning=FALSE, message=FALSE}
+
+#Prediction and Error rates
+
+pred.pamr <- predict(nscTune, Weekly.2009.2010)
+table(pred.pamr, Direction.2009.2010)
+
+
+```
+
+Based on the results of the table above, We may conclude that the percentage of correct predictions (Down * Down & Up *Up) on the training data is $(24+61)/104$ which is equal to $81.73$%. So, we can say that $18.27$% is the training error rate. 
+
+
+
+#### $\color{red}{\text{Question h}}$   
+
+(h) Which of these methods appears to provide the best results on this data? 
+
+### $\color{blue}{\text{Answer h}}$
+
+Based on the models that we have run and looking at the test error rate data, we can say that **Logistic Regression** is the best model.
+
+
