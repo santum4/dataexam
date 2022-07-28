@@ -1,0 +1,497 @@
+---
+title: "Santanu_Mukherjee_zes254_HW3"
+author: "Santanu Mukherjee, zes254"
+date: "07/27/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE)
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(pls)
+library(lars)
+library(elasticnet)
+library(pROC)
+
+
+```
+
+## R Markdown
+
+
+### Chapter 12 - E-Book - Applied Predictive Modelling - Exercises pages 327:
+
+### $\color{red}{\text{Q 12.2}}$
+
+In Exercise 4.4, we described a data set which contained 96 oil samples each from one of seven types of oils (pumpkin, sunflower, peanut, olive, soybean, rapeseed, and corn). Gas chromatography was performed on each sample and the percentage of each type of 7 fatty acids was determined. We would like to use these data to build a model that predicts the type of oil based on a sample’s fatty acid percentages.
+
+
+#### $\color{green}{\text{Q 12.2 a}}$
+
+(a) Like the hepatic injury data, these data suffer from extreme imbalance. Given this imbalance, should the data be split into training and test sets?
+
+### $\color{blue}{\text{Answer (12.2 a)}}$
+
+Yes, we would still split the data into training and test data sets.
+
+```{r 12-2a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+data(oil)
+
+library(MASS)
+set.seed(123)
+
+barplot(table(oilType),col=c("skyblue"), main="Class Distribution")
+
+# Identifying predictors with zero-variance
+nzv = nearZeroVar(fattyAcids,saveMetrics =TRUE)
+nzv
+
+
+#
+zv_cols = nearZeroVar(fattyAcids)
+print( sprintf("Dropping %d zero variance columns from %d (fraction=%10.6f)", length(zv_cols), dim(fattyAcids)[2], length(zv_cols)/dim(fattyAcids)[2]) );
+X = fattyAcids
+
+# There are no linearly dependent columns remaining (or to start with)
+print( findLinearCombos(X) )
+
+
+```
+
+
+
+```{r 12-2a2, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+# Remove the correlation between the predictors
+
+high.Corr.M<-findCorrelation(cor(fattyAcids),cutoff = .75)
+no.high.corr <- fattyAcids[,-high.Corr.M]
+
+# So, after removing the highly correlated predictor, we split the data into 80% training and 20% test (using stratified random sampling)
+
+set.seed(234)
+training.Rows =  createDataPartition(oilType, p = .80, list= FALSE)
+
+train.FattyAcids <- no.high.corr[ training.Rows, ]
+test.FattyAcids <- no.high.corr[-training.Rows, ]
+
+train.OilType <- oilType[training.Rows]
+test.OilType <- oilType[-training.Rows]
+
+ctrl <- trainControl(summaryFunction = defaultSummary)
+
+
+
+```
+
+
+
+
+#### $\color{green}{\text{Q 12.2 b}}$
+
+(b) Which classification statistic would you choose to optimize for this exercise and why?
+
+### $\color{blue}{\text{Answer (12.2 b)}}$
+
+The classification statistic that I have used here is the **"Accuracy"** rate. This is the simplest statistic as it reflects the agreement between the observed and predicted classes and so has the most straight forward interpretation.
+
+
+
+#### $\color{green}{\text{Q 12.2 c}}$
+
+Of the models presented in this chapter, which performs best on these data? Which oil type does the model most accurately predict? Least
+accurately predict?
+
+### $\color{blue}{\text{Answer (12.2 c)}}$
+
+Building various models
+
+```{r 12-2c-1, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Build models with this data:
+#
+############ Logistic Regression Analysis #############
+# logistic regression
+
+library(caret)
+set.seed(456)
+lr.FattyAcids <- train(x=train.FattyAcids,
+               y = train.OilType,
+               method = "multinom",
+               metric = "Accuracy",
+               trControl = ctrl)
+
+
+prediction.LR.FattyAcids<-predict(lr.FattyAcids,test.FattyAcids)
+
+confusionMatrix(data =prediction.LR.FattyAcids,
+                reference = test.OilType)
+plot(lr.FattyAcids)
+
+
+
+############ Linear Discriminant Analysis #############
+
+# LDA Analysis
+library(MASS)
+set.seed(678)
+
+
+lda.FattyAcids <- train(x = train.FattyAcids,
+                y = train.OilType,
+                method = "lda",
+                metric = "Accuracy",
+                trControl = ctrl)
+
+prediction.LDA.FattyAcids <-predict(lda.FattyAcids,test.FattyAcids)
+confusionMatrix(data =prediction.LDA.FattyAcids,
+                reference = test.OilType)
+
+
+
+############## Partial Least Squares Discriminant Analysis ###############
+
+library(MASS)
+set.seed(123)
+pls.FattyAcids <- train(x = train.FattyAcids,
+                y = train.OilType,
+                method = "pls",
+                tuneGrid = expand.grid(.ncomp = 1:4),
+                metric = "Accuracy",
+                trControl = ctrl)
+
+prediction.PLS.FattyAcids <-predict(pls.FattyAcids,test.FattyAcids)
+confusionMatrix(data =prediction.PLS.FattyAcids,
+                reference = test.OilType)
+
+plot(pls.FattyAcids)
+
+
+########### Penalized Models ###########
+
+########### Penalized Models for Logistic Regression ###########
+glmnGrid <- expand.grid(.alpha = c(0, .1, .2, .4, .6, .8, 1),
+                        .lambda = seq(.01, .2, length = 10))
+set.seed(123)
+
+glmn.Tuned.LR.FattyAcids<- train(x=train.FattyAcids,
+                        y =train.OilType,
+                        method = "glmnet",
+                        tuneGrid = glmnGrid,
+                        metric = "Accuracy",
+                        trControl = ctrl)
+
+prediction.Glmnet.FattyAcids <-  predict(glmn.Tuned.LR.FattyAcids,test.FattyAcids)
+confusionMatrix(data =prediction.Glmnet.FattyAcids,reference = test.OilType)
+
+plot(glmn.Tuned.LR.FattyAcids)
+
+########### Penalized Models for LDA ###########
+
+library(sparseLDA)
+set.seed(123)
+sparse.Lda.ModelFattyAcids <- sda(x=train.FattyAcids,
+                         y =train.OilType,
+                         lambda = 0.01,
+                         stop = -7)
+## the ridge parameter called lambda.
+
+prediction.Sparse.LDA.FattyAcids <-  predict(sparse.Lda.ModelFattyAcids,test.FattyAcids)
+confusionMatrix(data =prediction.Sparse.LDA.FattyAcids$class, reference = test.OilType)
+
+
+
+########### Nearest Shrunken Centroids ###########
+
+library(pamr)
+nsc.Grid.FattyAcids <- data.frame(.threshold = seq(0,4, by=0.1))
+set.seed(123)
+nsc.Tuned.FattyAcids <- train(x = train.FattyAcids, 
+                     y = train.OilType,
+                     method = "pam",
+                     tuneGrid = nsc.Grid.FattyAcids,
+                     metric = "Accuracy",
+                     trControl = ctrl)
+
+prediction.NSC.FattyAcids <-predict(nsc.Tuned.FattyAcids,test.FattyAcids)
+confusionMatrix(data =prediction.NSC.FattyAcids, reference = test.OilType)
+
+plot(nsc.Tuned.FattyAcids)
+
+
+```
+
+
+
+```{r 12-2c-2, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Combining the models from Question 12
+res12 = resamples(list(LR=lr.FattyAcids,LDA=lda.FattyAcids,PLS=pls.FattyAcids,GLM=glmn.Tuned.LR.FattyAcids,NSC=nsc.Tuned.FattyAcids ))
+dotplot(res12)
+
+
+```
+
+
+Based on the output of the resamples function on the training data and using the classification statistic **"Accuracy"**, and also matching with the Confusion Matrix data for test data, we can say that **GLM (Penalized Model for Logistic Regression)** is the best model as far as accuracy of prediction is concerned.
+
+And from the data, we can also see that **PLS (Partial Least Square Discriminant Analysis)** is the model with the least accurate prediction.
+
+
+
+
+### Chapter 13 - E-Book - Applied Predictive Modelling - Exercises pages 367:
+
+### $\color{red}{\text{Q 13.2}}$
+
+
+Use the fatty acid data from the previous exercise set (Exercise 12.2).
+
+
+#### $\color{green}{\text{Q 13.2 a}}$
+
+(a) Use the same data splitting approach (if any) and pre-processing steps that you did in the previous chapter. Using the same classification statistic as before, build models described in this chapter for these data. Which model has the best predictive ability? How does this optimal model’s performance compare to the best linear model’s performance? Would you infer that the data have nonlinear separation boundaries based on this comparison?
+
+### $\color{blue}{\text{Answer (13.2 a)}}$
+
+
+So, the classification statistic that I will be using here is the same as the one I used in the previous question which is "Accuracy" rate. This is the simplest statistic as it reflects the agreement between the observed and predicted classes and so has the most straight forward interpretation.
+
+
+```{r 13-2a1, echo=TRUE, warning=FALSE, message=FALSE}
+
+
+### Create a control function that will be used across models. 
+#set.seed(100)
+
+ctrl <- trainControl(summaryFunction = defaultSummary, classProbs = TRUE)
+
+
+########################## Regularized discriminant analysis (RDA) ###################################
+ 
+ set.seed(476)
+ library(klaR)
+ 
+ rda_grid = trainControl(method = "cv", number = 5)
+ 
+ RDATune <- train(x=train.FattyAcids,
+ y = train.OilType,
+ method = "rda",
+ metric = "Accuracy",
+ trControl = rda_grid)
+ 
+ RDATune
+ plot(RDATune)
+
+ 
+ ################################### Mixture discriminant analysis (MDA) ####################### 
+ set.seed(476)
+ 
+ library(mda)
+ MDATune <- train(as.matrix(train.FattyAcids),
+ y =  train.OilType,
+ method = "mda",
+ tuneGrid = expand.grid(.subclasses = 3:10),
+ metric = "Accuracy",
+ trControl = ctrl)
+ 
+ MDATune
+plot(MDATune)
+ 
+############################### Naive Bayes (NB) ################################################
+ 
+ set.seed(476)
+ 
+ NBTune <- train(x = as.matrix(train.FattyAcids),
+ y = train.OilType,
+ method = "nb",
+ preProc = c('center', 'scale'),
+ metric = "Accuracy",
+ trControl = ctrl)
+ 
+ NBTune
+ 
+
+ 
+############################### K-nearest neighbors (KNN) #########################################
+
+set.seed(1)
+KNNTune = train(x=train.FattyAcids, y=train.OilType, method="knn", metric = "Accuracy",preProcess=c("center","scale"), tuneLength=10)
+KNNTune
+plot(KNNTune)
+ 
+############################### Neural networks (NN) ##############################################
+ set.seed(476)
+ 
+ nnetGrid <- expand.grid(.size = 1:10,
+ .decay = c(0, .1, 1, 2))
+ maxSize <- max(nnetGrid$.size)
+ numWts <-200
+
+ NNTune <- train(x = as.matrix(train.FattyAcids),
+               y = train.OilType,
+ method = "nnet",
+ metric = "Accuracy",
+ preProc = c("center", "scale", "spatialSign"),
+ tuneGrid = nnetGrid,
+ trace = FALSE,
+ maxit = 2000,
+ MaxNWts = numWts,
+ trControl = ctrl)
+ 
+ NNTune
+ 
+ plot(NNTune)
+
+
+
+############################### Flexible discriminant analysis (FDA) ############################### 
+
+ set.seed(476)
+ 
+ library(mda)
+ FDATune <- train(as.matrix(train.FattyAcids),
+ y =  train.OilType,
+ method = "fda",
+ tuneGrid = expand.grid(.nprune = 2:30,.degree = 1:2),
+ metric = "Accuracy",
+ trControl = ctrl)
+ 
+ FDATune
+ 
+plot(FDATune)
+
+ 
+############################### Support Vector Machines (SVM) ############################### 
+
+set.seed(0)
+
+library(kernlab)
+SVMTune = train(x=train.FattyAcids, y=train.OilType, method="svmRadial", metric = "Accuracy", preProcess=c("center","scale"), tuneLength=20)
+
+SVMTune
+
+plot(SVMTune)
+
+ 
+
+```
+
+
+
+
+```{r 13-2a2, echo=TRUE, warning=FALSE, message=FALSE}
+
+### Predict the test set based on eight models
+#RDA
+pred.rda <- predict(RDATune,test.FattyAcids, type = "prob")[,1]
+#MDA
+pred.mda <- predict(MDATune,test.FattyAcids, type = "prob")[,1]
+#NB
+pred.nb <- predict(NBTune,test.FattyAcids, type = "prob")[,1]
+#KNN
+pred.knn <- predict(KNNTune,test.FattyAcids, type = "prob")[,1]
+#NN
+pred.nn <- predict(NNTune,test.FattyAcids, type = "prob")[,1]
+#FDA
+pred.fda <- predict(FDATune, test.FattyAcids, type = "prob")[,1]
+#SVM
+pred.svm <- predict(SVMTune, test.FattyAcids, type = "prob")[,1]
+
+
+
+
+
+#########################Create the confusion matrix from the test set######################
+
+#Confusion Matrix of RDA
+confusionMatrix(data = predict(RDATune, test.FattyAcids), reference = test.OilType)
+
+#Confusion matrix of MDA
+confusionMatrix(data = predict(MDATune, test.FattyAcids), reference = test.OilType)
+
+#Confusion matrix of NB
+confusionMatrix(data = predict(NBTune, test.FattyAcids), reference = test.OilType)
+
+#Confusion matrix of KNN
+confusionMatrix(data = predict(KNNTune, test.FattyAcids), reference = test.OilType)
+
+#Confusion matrix of NN
+confusionMatrix(data = predict(NNTune, test.FattyAcids), reference = test.OilType)
+
+#Confusion matrix of FDA
+confusionMatrix(data = predict(FDATune, test.FattyAcids), reference = test.OilType)
+
+#Confusion matrix of SVM
+confusionMatrix(data = predict(SVMTune, test.FattyAcids), reference = test.OilType)
+
+
+#Resamples of Training data
+
+# Combining the models from Question 13
+res13 = resamples(list(MDA=MDATune,NB=NBTune,NN=NNTune,FDA=FDATune))
+dotplot(res13)
+
+
+```
+
+
+#### $\color{green}{\text{Q 13.2 b}}$
+
+(b) Which oil type does the optimal model most accurately predict? Least accurately predict?
+
+
+### $\color{blue}{\text{Answer (13.2 b)}}$
+
+
+Based on the output of the resamples function on the training data and using the classification statistic **"Accuracy"**, and also matching with the Confusion Matrix data for test data, we can say that **MDA (Mixed Discriminant Analysis)** is the best model as far as accuracy of prediction is concerned.
+
+And from the data, we can also see that **NB (Naive Bayes)** is the model with the least accurately prediction.
+
+### $\color{blue}{\text{(Overall)}}$
+
+
+
+```{r 13-2-overall, echo=TRUE, warning=FALSE, message=FALSE}
+
+# Combining the models from Question 12 & Question 13
+res1213 = resamples(list(MDA=MDATune,NB=NBTune,NN=NNTune,FDA=FDATune,LR=lr.FattyAcids,LDA=lda.FattyAcids,PLS=pls.FattyAcids,GLM=glmn.Tuned.LR.FattyAcids,NSC=nsc.Tuned.FattyAcids))
+dotplot(res1213)
+
+
+```
+
+
+
+If we combine the outputs of Question 12 and Question 13, based on the output of the resamples function on the training data and using the classification statistic **"Accuracy"**, and also matching with the Confusion Matrix data for test data, we can say that **GLM (Penalized Model for Logistic Regression)** is the best model as far as accuracy of prediction is concerned.
+
+Again if we combine the outputs of Question 12 and Question 13,from the data, we see that **PLS (Partial Least Squares Discriminant Analysis)** is the model with the least accurate prediction.
+
+
+
+
+
+
