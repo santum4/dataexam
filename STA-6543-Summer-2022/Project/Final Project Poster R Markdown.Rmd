@@ -1,0 +1,643 @@
+---
+title: Final Project - Prediction of the onset of diabetes in PIMA Indians
+author:
+  
+  - name: Santanu Mukherjee, Brenda Maldonado, Austin Vanderlyn
+    Date : 7 August 2022
+    
+
+  
+column_numbers: 6
+logoright_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+logoleft_name: https&#58;//raw.githubusercontent.com/brentthorne/posterdown/master/images/betterhexlogo.png
+output: 
+  posterdown::posterdown_html:
+    self_contained: false
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(readxl)
+library(car)
+library(boot)
+library(ISLR)
+library(caret)
+library(glmnet)
+library(Rcpp)
+library(corrplot)
+library(formatR)
+library(knitrBootstrap)
+library(AppliedPredictiveModeling)
+library(caret)
+library(e1071)
+library(mlbench)
+library(MASS)
+library(splines)
+library(gam)
+library(ISLR2)
+library(tree)
+library(randomForest)
+library(ggcorrplot)
+library(ROCR)
+library(mice)
+library(VIM)
+library(pROC)
+library(kableExtra)
+library(ipred)
+library(gbm)
+
+```
+
+# Introduction & Background
+
+The [PIMA](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database?select=diabetes.csv) Indians dataset is a selection of data from a larger database and originally from the National Institute of Diabetes and Digestive and Kidney Diseases. The objective of this project is to use one or more data analysis methods that we have learned to help predict the onset of diabetes based on the data that is present in the dataset. All patients listed in the dataset here at least 21 years old of PIMA Indian heritage and they are also females.
+
+The dataset consists of one target variable, **Outcome** along with several predictor variables. The list of predictor variables are Pregnancies, Glucose level, Blood Pressure, Skin Thickness, BMI, Insulin level, Diabetes Pedigree Function and Age.
+The diabetes.csv file was downloaded and saved in a data frame. This dataset has **768 observations (rows) and 9 variables (columns)**. The response variable is **Outcome** and there are **8** other predictor variables.
+
+### Objectives
+
+1. Detailed data analysis to understand the nature of data
+2. Pre-processing of data to transform the data for model readiness
+3. Modeling the pre-processed data using one or two methods and then predict the onset of diabetes
+4. Conclude on the results related to prediction accuracy and errors for the models run
+
+# Data Structures
+
+The **PIMA** dataset is in a .csv format and it has been stored in a data frame. The response variable $Outcome$ has values $0$ or $1$.   
+The variables $Diabetes$ and $BMI$ are of $numeric$ type. The other variables are all of type $int$.
+
+
+# Methods
+
+### EDA
+
+First , Exploratory Data Analysis (EDA) was performed to understand data. As a part of EDA, several charts are used to identify and see whether there is any relationship between the predictors and the response variable. The response variable **Outcome** is binary - has values **0** or **1**. In the entire dataset, there are **268** rows with value of **1**. It means **500/768** **(65%)** of the patients are predicted not to have diabetes.
+   
+The EDA has also showed that there is no significant correlation between predictors and so all predictors will play a significant role in predicting the onset of diabetes while performing modeling.
+
+### Missing Value Imputation
+
+Imputation is the process of replacing missing values with substituted data. It is done as a pre-processing step.In this dataset, there are in total **763** missing values. The **pmm (predictive mean matching)** method was used to for imputation in this project.
+
+
+
+# Statistical Analysis
+
+The diagram below shows the correlation between the predictors. It is evident that there is **NO STRONG** correlation between the predictors. This means that all predictors are significant and so no variable will be dropped while modeling the data.
+
+```{r cor-1, out.width='80%', fig.align='center', fig.cap='Correlation between Predictors', fig.height=5, message=FALSE}
+
+library(ggcorrplot)
+# Load dataset PIMA
+df.db = read.csv('https://github.com/santum4/dataexam/raw/main/STA-6543-Summer-2022/Project/PIMA.csv', header=TRUE)
+colnames(df.db)[7] <- "Diabetes"
+Cor = round(cor(df.db[,1:8]),2)
+ggcorrplot(Cor, colors = c("green", "white", "red"))
+
+```
+
+### Data pre-processing
+
+The below diagram shows that there are missing data points in the dataset. So, pre-processing of the data is very important. Data imputation is used to help solve for the missing values. There are **763** missing data points in this **PIMA** dataset.
+
+```{r missing1, out.width='80%', fig.align='center', fig.cap='Missing Data', fig.height=5, message=FALSE, include=FALSE}
+
+df.db$Pregnancies[df.db$Pregnancies==0]=NA
+df.db$BloodPressure[df.db$BloodPressure==0]=NA
+df.db$Glucose[df.db$Glucose==0]=NA
+df.db$SkinThickness[df.db$SkinThickness==0]=NA
+df.db$BMI[df.db$BMI==0]=NA
+df.db$Insulin[df.db$Insulin==0]=NA
+
+
+```
+
+
+
+```{r missing2, out.width='80%', fig.align='center', fig.cap='Missing Data and Patterns', fig.height=5, message=FALSE, results='hide'}
+
+# Analysis of Missing Values and Patterns
+
+aggr(df.db, col=c('red','lightblue'), numbers=TRUE, sortVars=TRUE, labels=names(df.db), cex.axis=.7, gap=1, ylab=c("Barplot of missing data","Patterns of Data"))
+
+```
+
+
+### Data Imputation using **pmm (predictive mean matching)** method
+
+```{r imputation1, out.width='80%', fig.align='center', fig.cap='Data Imputation', fig.height=5, message=FALSE, results='hide'}
+
+
+# Function defined to express the missing values as percentage of observations
+
+num.missing <-function(x){a<-sum(is.na(x))/length(x); return(a)}
+misspercent <-apply(df.db,1,num.missing)
+
+
+# Impute the missing values by using the method predictive mean matching and max iteration of 50 times. Number of imputed datasets is 5
+
+impu.df.db <- mice(df.db,m=5,maxit=50,meth='pmm')
+
+# Checking the imputed data - sample test with BMI
+
+impu.df.db$imp$BMI
+
+# Replacing the imputed data
+
+updt.df.db = complete(impu.df.db,1)
+summary(updt.df.db)
+
+
+```
+
+
+
+
+```{r imputation2, out.width='80%', fig.align='center', fig.cap='Data Imputation Completed- 0 Missing values', fig.height=5, message=FALSE, results='hide'}
+
+# Data displaying the Summary Statistics
+
+# describe(updt.df.db, fast=TRUE)
+
+aggr(updt.df.db, col=c('darkgreen','red'), numbers=TRUE, sortVars=TRUE, labels=names(df.db), cex.axis=.7, gap=1, ylab=c("Barplot showing no missing data","Patterns in Data"))
+
+```
+
+As we can see here , once the data imputation is complete, there are **NO MISSING** data.
+
+### Data Modeling
+
+The data was split with 80% (training data) and 20% (test data) and multiple models are run with the training dataset. The test dataset is used for prediction.
+
+
+```{r LogReg1, out.width='80%', message=FALSE, results='hide'}
+
+# Data processing required for Logistic Regression
+
+require(caTools)
+set.seed(456)
+updt1.df.db = updt.df.db[,1:9]
+sample = sample.split(updt1.df.db$Outcome, SplitRatio=0.80)
+train = subset(updt1.df.db, sample==TRUE)
+test = subset(updt1.df.db, sample==FALSE)
+nrow(updt1.df.db)
+nrow(train)
+nrow(test)
+str(train)
+
+# Baseline Model
+table(updt1.df.db$Outcome)
+
+
+
+# Baseline Accuracy
+negative.outcome = table(updt1.df.db$Outcome)[1]
+negative.outcome
+baseline.accuracy = round(negative.outcome/nrow(updt.df.db),2)
+baseline.accuracy
+
+
+# Fit Logistic Regression model - using all variables
+
+log.updt.df.db = glm(Outcome ~ ., data = train, family = binomial)
+summary(log.updt.df.db)
+
+
+# Let's predict outcome on Training dataset
+
+train.pred <- predict(log.updt.df.db, train, type = "response")
+summary(train.pred)
+
+# Then predict outcome on Test dataset
+
+test.pred <-predict(log.updt.df.db, test, type='response')
+summary(test.pred)
+
+
+```
+
+
+
+```{r Logreg2, out.width='80%', message=FALSE, results='hide'}
+
+
+# Prediction Accuracy with Test Data
+sum(diag(table(Actuals=test$Outcome, Predictions=test.pred>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=test.pred>0.5)))
+
+
+# Root MSE for Logistic Regression
+
+sqrt(mean((predict(log.updt.df.db, newdata = test) - test$Outcome)^2))
+
+
+```
+Accuracy for Logistic Regression is **0.792** 
+
+
+```{r Logreg3, out.width='80%', fig.align='center', fig.cap='ROC Curve for Logistic Regression', fig.height=5, message=FALSE, results='hide'}
+
+
+# Confusion Matrix for test data
+
+prediction.test <- ifelse(test.pred<0.5,0,1)
+table(as.factor(test$Outcome),prediction.test)
+
+#calculate sensitivity
+sensitivity(as.factor(test$Outcome), as.factor(prediction.test))
+
+#calculate specificity
+specificity(as.factor(test$Outcome), as.factor(prediction.test))
+
+
+# ROC Curve
+
+library(ROCR)
+ROC_Pred<-prediction(test.pred,test$Outcome)
+ROC_Perf=performance(ROC_Pred, 'tpr','fpr')
+
+#plotting the ROC Graph
+plot(ROC_Perf,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+
+
+
+```{r Bagging1, out.width='80%', message=FALSE, results='hide'}
+
+#Bagging
+
+sim.bag = bagging(Outcome ~ ., data = train, ntree = 3000, mtry = 2, na.action=na.omit)
+sim.bag.pred.te = predict(sim.bag, newdata = test, type = "class")
+print("Testing error using bagging")
+errbag = sqrt(mean((sim.bag.pred.te - test$Outcome)^2))
+errbag
+
+# Prediction Accuracy with Test Data
+sum(diag(table(Actuals=test$Outcome, Predictions=sim.bag.pred.te>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=sim.bag.pred.te>0.5)))
+
+
+
+```
+
+
+
+```{r Bagging-ROC, out.width='80%', fig.align='center', fig.cap='ROC Curve for Bagging', fig.height=5, warning=FALSE, message=FALSE, results='hide'}
+
+
+# Confusion Matrix for test data for Bagging
+
+prediction.bag.test <- ifelse(sim.bag.pred.te<0.5,0,1)
+table(as.factor(test$Outcome),prediction.bag.test)
+
+#calculate sensitivity for Bagging
+sensitivity(as.factor(test$Outcome), as.factor(prediction.bag.test))
+
+#calculate specificity for Bagging
+specificity(as.factor(test$Outcome), as.factor(prediction.bag.test))
+
+
+# ROC Curve for Bagging
+
+library(ROCR)
+ROC_bag_Pred<-prediction(sim.bag.pred.te,test$Outcome)
+ROC_bag_Perf=performance(ROC_bag_Pred, 'tpr','fpr')
+
+#plotting the ROC Graph for Bagging
+plot(ROC_bag_Perf,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+
+Accuracy for Bagging is **0.759**. 
+
+
+```{r RF-Boosting1, out.width='80%', message=FALSE, warning=FALSE, results='hide'}
+
+
+#Random Forest
+
+sim.rf = randomForest(Outcome ~ ., data = train, ntree = 3000, mtry = 2, na.action=na.omit)
+sim.rf.pred.te = predict(sim.rf, newdata = test, type = "class")
+print("Testing error using Random Forest")
+errrf = sqrt(mean((sim.rf.pred.te - test$Outcome)^2))
+
+# Prediction Accuracy with Test Data for Random Forest
+sum(diag(table(Actuals=test$Outcome, Predictions=sim.rf.pred.te>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=sim.rf.pred.te>0.5)))
+
+
+
+#Boosting
+
+sim.boost = gbm(Outcome ~ ., data = train, shrinkage=0.01, 
+  distribution = 'bernoulli', n.trees = 3000, verbose=F)
+sim.b.pred.te = predict(sim.boost, newdata = test, n.trees = 1000, type = "response")
+sim.b.pred.te = ifelse(sim.b.pred.te>0.5,1,0)
+
+
+# Prediction Accuracy with Test Data for Boosting
+sum(diag(table(Actuals=test$Outcome, Predictions=sim.b.pred.te>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=sim.b.pred.te>0.5)))
+
+
+```
+
+
+
+```{r RF-ROC, out.width='80%', fig.align='center', fig.cap='ROC Curve for Random Forest', fig.height=5, warning=FALSE, message=FALSE, results='hide'}
+
+
+# Confusion Matrix for test data for Random Forest
+
+prediction.rf.test <- ifelse(sim.rf.pred.te<0.5,0,1)
+table(as.factor(test$Outcome),prediction.rf.test)
+
+#calculate sensitivity for Random Forest
+sensitivity(as.factor(test$Outcome), as.factor(prediction.rf.test))
+
+#calculate specificity for Random Forest
+specificity(as.factor(test$Outcome), as.factor(prediction.rf.test))
+
+
+# ROC Curve for Random Forest
+
+library(ROCR)
+ROC_rf_Pred<-prediction(sim.rf.pred.te,test$Outcome)
+ROC_rf_Perf=performance(ROC_rf_Pred, 'tpr','fpr')
+
+#plotting the ROC Graph for Random Forest
+plot(ROC_rf_Perf,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+Accuracy for Random Forest is **0.766**. 
+
+
+
+```{r Boosting-ROC, out.width='80%', fig.align='center', fig.cap='ROC Curve for Boosting', fig.height=5, warning=FALSE, message=FALSE, results='hide'}
+
+
+# Confusion Matrix for test data for Boosting
+
+prediction.b.test <- ifelse(sim.b.pred.te<0.5,0,1)
+table(as.factor(test$Outcome),prediction.b.test)
+
+#calculate sensitivity for Boosting
+sensitivity(as.factor(test$Outcome), as.factor(prediction.b.test))
+
+#calculate specificity for Boosting
+specificity(as.factor(test$Outcome), as.factor(prediction.b.test))
+
+
+# ROC Curve for Boosting
+
+library(ROCR)
+ROC_b_Pred<-prediction(sim.b.pred.te,test$Outcome)
+ROC_b_Perf=performance(ROC_b_Pred, 'tpr','fpr')
+
+#plotting the ROC Graph for Boosting
+plot(ROC_b_Perf,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+
+Accuracy for Boosting is **0.753**. 
+
+
+### SVM (Linear) & SVM (Radial Kernel)
+
+Built SVM with Linear and Radial kernel on the same dataset (80% training and 20% test dataset). 
+
+
+```{r SVML, out.width='80%', fig.align='center', fig.cap='ROC Curve for SVM - Linear', fig.height=5, message=FALSE, results='hide'}
+
+
+# SVM Linear Model & Performance
+
+svm.df.db.l  = svm(Outcome ~ ., data = train, kernel = "linear", cost = 1, gamma = 0.1,probability = TRUE)
+
+# Test Error for SVM Linear
+
+test.error.linear = sqrt(mean((predict(svm.df.db.l, newdata = test) - test$Outcome)^2))
+test.error.linear
+
+
+# Confusion Matrix for test data
+
+test.pred.svm.l <- predict(svm.df.db.l, test, type = "response")
+prediction.test.l <- ifelse(test.pred.svm.l<0.5,0,1)
+table(as.factor(test$Outcome),prediction.test.l)
+
+#calculate sensitivity
+sensitivity(as.factor(test$Outcome), as.factor(prediction.test.l))
+
+#calculate specificity
+specificity(as.factor(test$Outcome), as.factor(prediction.test.l))
+
+
+# Prediction Accuracy with Test Data for SVM Linear
+
+sum(diag(table(Actuals=test$Outcome, Predictions=test.pred.svm.l>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=test.pred.svm.l>0.5)))
+
+
+# Root MSE SVM Linear
+
+sqrt(mean((predict(svm.df.db.l, newdata = test) - test$Outcome)^2))
+
+
+
+```
+
+
+```{r SVMLROC, out.width='80%', fig.align='center', fig.cap='ROC Curve for SVM - Linear', fig.height=5, message=FALSE, results='hide'}
+
+
+# ROC Curve for SVM Linear
+
+library(ROCR)
+ROC_Pred_l<-prediction(test.pred.svm.l,test$Outcome)
+ROC_Perf_l=performance(ROC_Pred_l, 'tpr','fpr')
+
+#plotting the ROC Graph for SVM Linear
+plot(ROC_Perf_l,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+Accuracy for SVM Linear is **0.811**. 
+
+
+```{r SVMR, out.width='80%', fig.align='center', fig.cap='ROC Curve for SVM - Radial', fig.height=5, message=FALSE, results='hide'}
+
+# SVM with Radial kernel Model & Performance
+
+svm.df.db.r  = svm(Outcome ~ ., data = train, kernel = "radial", cost = 1, gamma = 0.1,probability = TRUE)
+
+
+# Test Error for SVM Radial
+
+test.error.radial = sqrt(mean((predict(svm.df.db.r, newdata = test) - test$Outcome)^2))
+test.error.radial
+
+
+# Confusion Matrix for test data
+
+test.pred.svm.r <- predict(svm.df.db.r, test, type = "response")
+prediction.test.r <- ifelse(test.pred.svm.r<0.5,0,1)
+table(as.factor(test$Outcome),prediction.test.r)
+
+#calculate sensitivity
+sensitivity(as.factor(test$Outcome), as.factor(prediction.test.r))
+
+#calculate specificity
+specificity(as.factor(test$Outcome), as.factor(prediction.test.r))
+
+
+# Prediction Accuracy with Test Data for SVM Radial
+
+sum(diag(table(Actuals=test$Outcome, Predictions=test.pred.svm.r>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=test.pred.svm.r>0.5)))
+
+
+# Root MSE for SVM Radial
+
+sqrt(mean((predict(svm.df.db.r, newdata = test) - test$Outcome)^2))
+
+
+```
+
+
+
+```{r SVMRROC, out.width='80%', fig.align='center', fig.cap='ROC Curve for SVM - Radial', fig.height=5, message=FALSE, results='hide'}
+
+# ROC Curve for SVM Radial
+
+library(ROCR)
+ROC_Pred_r<-prediction(test.pred.svm.r,test$Outcome)
+ROC_Perf_r=performance(ROC_Pred_r, 'tpr','fpr')
+
+#plotting the ROC Graph for SVM Radial
+
+plot(ROC_Perf_r,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+Accuracy for SVM Radial is **0.824**.
+
+
+
+### SVM  - Radial Kernel with tuning
+
+
+```{r SVMRT, out.width='80%', fig.align='center', fig.cap='ROC Curve for SVM - Radial Tuning', fig.height=5, message=FALSE, results='hide'}
+
+# SVM with Radial kernel Model with svm tune & Performance
+
+set.seed(3)
+svm_tune <- tune(svm, Outcome ~ ., data = train, kernel="radial", ranges=list(cost=10^(-1:2), gamma=c(.5,1,2)))
+print(svm_tune)
+
+
+# Confusion Matrix for test data
+
+test.pred.svm.r.tune <- predict(svm_tune$best.model, test, type = "response")
+prediction.test.r.tune <- ifelse(test.pred.svm.r.tune<0.5,0,1)
+table(as.factor(test$Outcome),as.factor(prediction.test.r.tune))
+
+#calculate sensitivity
+sensitivity(as.factor(test$Outcome), as.factor(prediction.test.r.tune))
+
+#calculate specificity
+specificity(as.factor(test$Outcome), as.factor(prediction.test.r.tune))
+
+
+# Prediction Accuracy with Test Data for SVM Radial Tuning
+
+sum(diag(table(Actuals=test$Outcome, Predictions=prediction.test.r.tune>0.5)))/(sum(table(Actuals=test$Outcome, Predictions=prediction.test.r.tune>0.5)))
+
+# Root MSE for SVM Radial Tuning
+
+sqrt(mean((predict(svm_tune$best.model, newdata = test) - test$Outcome)^2))
+
+
+
+```
+
+
+
+```{r SVMRTROC, out.width='80%', fig.align='center', fig.cap='ROC Curve for SVM - Radial Tuning', fig.height=5, message=FALSE, results='hide'}
+
+# ROC Curve for SVM Radial
+
+library(ROCR)
+ROC_Pred_r_tune<-prediction(prediction.test.r.tune,test$Outcome)
+ROC_Perf_r_tune=performance(ROC_Pred_r_tune, 'tpr','fpr')
+
+#plotting the ROC Graph for SVM Radial Tuning
+
+plot(ROC_Perf_r_tune,colorize=TRUE, print.cutoffs.at=seq(0.1, by=0.1))
+abline(a=0, b=1)
+
+
+```
+
+
+Accuracy for SVM Radial with tuning is **0.694**.
+
+
+
+
+# Results
+
+The below table provides a comparison of the results of the different parameters that the models are being evaluated for.
+
+
+```{r mytable1, out.width='80%', fig.align='center', fig.cap='Comparison of Model Statistics', fig.height=5, message=FALSE}
+
+
+Accuracy = c(0.792, 0.759, 0.766, 0.753, 0.811, 0.824, 0.694)
+Sensitivity = c(0.830,0.789,0.796,0.782,0.807,0.845, 0.726)
+Specificity = c(0.833,0.689,0.696,0.682,0.800,0.841, 0.594)
+
+results.table <- data.frame(Accuracy, Sensitivity, Specificity)
+
+colnames(results.table) = c("Accuracy", "Sensitivity", "Specificity")
+
+rownames(results.table) <- c("Logistic Regression","Bagging","Random Forest","Boosting","SVM - Linear","SVM - Radial", "SVM-Radial Tune")
+
+knitr::kable(results.table[1:7, 1:3], caption = 'Comparison of Model Statistics',align = 'llll',"html") %>%
+  kable_styling(font_size = 30)
+
+
+```
+
+
+# Conclusion
+
+In conclusion, it can be said that based on the current data split for this problem, SVM- Radial (kernel) is the best model.
+
+Out of the 7 models, SVM Radial Tune is the worst performing model.
+
+As and when the data mix changes for training and test datasets, models perform differently and so there can be a different model which will be the best.This means that there is no reason to assume that there exits an absolute correct model. In majority of the cases, a model's performance depends on the business needs for that organization and it is of utmost importance to understand the business value that is generated out of the models built. 
+
+
+# References
+
+Source : PIMA Indian dataset 
+(https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database?select=diabetes.csv) 
+
